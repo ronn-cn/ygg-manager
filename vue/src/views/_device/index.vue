@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <el-button class="filter-item"  type="primary" @click="dialogNewAccountVisible = true"> 新建设备 </el-button> 
+      <el-button class="filter-item"  type="primary" @click="handleDeviceClick('create',null)"> 新建设备 </el-button> 
       <el-input v-model="listQuery.name" placeholder="设备名称" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
       <el-input v-model="listQuery.ouid" placeholder="OUID" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
       <el-select v-model="listQuery.status" placeholder="状态" clearable style="width: 90px" class="filter-item">
@@ -19,7 +19,7 @@
       stripe
       :row-class-name="tableRowClassName"
     >
-      <el-table-column label="序号" align="center" width="80">
+      <el-table-column label="序号" align="center" width="80">  
         <template slot-scope="{row}">
           <span>{{ row.index }}</span>
         </template>
@@ -68,14 +68,16 @@
       </el-table-column>
       <el-table-column label="操作" align="center" fixed="right" width="150" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <el-link class="el-dropdown-link" type="primary" @click="handleLookClick(row)">查看</el-link>&nbsp;
-          <el-link class="el-dropdown-link" type="primary">编辑</el-link>&nbsp;
+          <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('look',row)">查看</el-link>&nbsp;
+          <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('update',row)">编辑</el-link>&nbsp;
           <el-dropdown>
             <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item>修改密码</el-dropdown-item>
               <el-dropdown-item>禁用/启用</el-dropdown-item>
-              <el-dropdown-item>删除设备</el-dropdown-item>
+              <el-dropdown-item>删除</el-dropdown-item>
+              <el-dropdown-item>下载</el-dropdown-item>
+              <el-dropdown-item>更新</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </template>
@@ -84,68 +86,66 @@
 
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
 
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;">
-        <el-form-item label="Type" prop="type">
-          <el-select v-model="temp.type" class="filter-item" placeholder="Please select">
-            <!-- <el-option v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name" :value="item.key" /> -->
+      <!-- 新建设备弹窗 -->
+    <el-dialog :title="dialogDeviceTitle" :visible.sync="dialogDeviceFormVisible">
+      <el-form ref="deviceDataForm" :model="deviceData" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;">
+        <el-form-item label="设备OUID">
+          <el-input v-model="deviceData.ouid" placeholder="不填写，默认自动生成OUID" />
+        </el-form-item>
+        <el-form-item label="设备名称">
+          <el-input v-model="deviceData.name" placeholder="请输入设备名称" />
+        </el-form-item>
+        <el-form-item label="设备PIN码">
+          <el-input v-model="deviceData.pin" placeholder="不填写，默认自动生成6位PIN码"/>
+        </el-form-item>
+        <el-form-item label="设备系统">
+          <el-select v-model="deviceData.assembly" class="filter-item" placeholder="Please select">
+            <!-- <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item" /> -->
           </el-select>
         </el-form-item>
-        <el-form-item label="Date" prop="timestamp">
-          <el-date-picker v-model="temp.timestamp" type="datetime" placeholder="Please pick a date" />
-        </el-form-item>
-        <el-form-item label="Title" prop="title">
-          <el-input v-model="temp.title" />
-        </el-form-item>
-        <el-form-item label="Status">
-          <el-select v-model="temp.status" class="filter-item" placeholder="Please select">
-            <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item" />
+        <el-form-item label="设备状态">
+          <el-select v-model="deviceData.status" class="filter-item" placeholder="Please select">
+            <!-- <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item" /> -->
           </el-select>
         </el-form-item>
-        <el-form-item label="Imp">
-          <el-rate v-model="temp.importance" :colors="['#99A9BF', '#F7BA2A', '#FF9900']" :max="3" style="margin-top:8px;" />
-        </el-form-item>
-        <el-form-item label="Remark">
-          <el-input v-model="temp.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="Please input" />
+        <el-form-item label="备注">
+          <el-input v-model="deviceData.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="请输入设备备注信息" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">
-          Cancel
-        </el-button>
-        <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()">
-          Confirm
-        </el-button>
+        <el-button @click="dialogDeviceFormVisible = false"> 取消 </el-button>
+        <el-button type="primary" @click="dialogDeviceStatus==='create'?createData():updateData()"> 确认 </el-button>
       </div>
     </el-dialog>
 
-    <el-dialog :visible.sync="dialogLookVisible" title="Reading statistics">
-      <template slot-scope="dialogLookData">
-        <el-form label-position="left" inline class="demo-table-expand">
-          <el-form-item label="设备名称">
-            <span>{{ dialogLookData.name }}</span>
-          </el-form-item>
-          <el-form-item label="所属店铺">
-            <span>{{ dialogLookData.shop }}</span>
-          </el-form-item>
-          <el-form-item label="商品 ID">
-            <span>{{ dialogLookData.id }}</span>
-          </el-form-item>
-          <el-form-item label="店铺 ID">
-            <span>{{ dialogLookData.shopId }}</span>
-          </el-form-item>
-          <el-form-item label="商品分类">
-            <span>{{ dialogLookData.category }}</span>
-          </el-form-item>
-          <el-form-item label="店铺地址">
-            <span>{{ dialogLookData.address }}</span>
-          </el-form-item>
-          <el-form-item label="商品描述">
-            <span>{{ dialogLookData.desc }}</span>
-          </el-form-item>
-        </el-form>
-      </template>
+    <!-- 设备查看弹窗 -->
+    <el-dialog :visible.sync="dialogDeviceLookVisible" :title="dialogDeviceTitle">
+      <el-form label-position="left" :model="deviceData">
+        <el-form-item label="设备名称">
+          <span>{{ deviceData.name }}</span>
+        </el-form-item>
+        <el-form-item label="设备OUID">
+          <span>{{ deviceData.ouid }}</span>
+        </el-form-item>
+        <el-form-item label="设备PIN码">
+          <span>{{ deviceData.pin }}</span>
+        </el-form-item>
+        <el-form-item label="设备系统">
+          <span>{{ deviceData.assembly.name }}</span>
+        </el-form-item>
+        <el-form-item label="设备状态">
+          <span>{{ deviceData.status.name }}</span>
+        </el-form-item>
+        <el-form-item label="授权注册码">
+          <span v-if = "deviceData.license != undefined">{{ deviceData.license.code }}</span>
+        </el-form-item>
+        <el-form-item label="设备备注">
+          <span>{{ deviceData.remark }}</span>
+        </el-form-item>
+      </el-form>
     </el-dialog>
+
+    <!-- 设备编辑弹窗 -->
   </div>
 </template>
 
@@ -159,16 +159,7 @@ export default {
   name: 'ComplexTable',
   components: { Pagination },
   directives: { waves },
-  filters: {
-    statusFilter(status) {
-      const statusMap = {
-        published: 'success',
-        draft: 'info',
-        deleted: 'danger'
-      }
-      return statusMap[status]
-    }
-  },
+  filters: {},
   data() {
     return {
       list: null,
@@ -222,27 +213,27 @@ export default {
         value: 13,
         text: '开发'
       }],
-      temp: {
-        id: undefined,
-        importance: 1,
+      assemblyOptions: [],  //动态获取
+      dialogDeviceLookVisible: false,
+      dialogDeviceFormVisible: false,
+      dialogDeviceStatus: '',
+      dialogDeviceTitle: '',
+      deviceData: {
+        id: 0,
+        name: '',
+        ouid: '',
+        pin: '',
+        assembly: '',
+        status: 0,
+        license: undefined,
+        product_json: undefined,
+        install_json: undefined,
         remark: '',
-        timestamp: new Date(),
-        title: '',
-        type: '',
-        status: 'published'
-      },
-      dialogLookVisible: false,
-      dialogLookData: null,
-      dialogFormVisible: false,
-      dialogStatus: '',
-      textMap: {
-        update: 'Edit',
-        create: 'Create'
-      },
-      rules: {
-        type: [{ required: true, message: 'type is required', trigger: 'change' }],
-        timestamp: [{ type: 'date', required: true, message: 'timestamp is required', trigger: 'change' }],
-        title: [{ required: true, message: 'title is required', trigger: 'blur' }]
+        created_at: 0,
+        updated_at: 0,
+        installed_at: 0,
+        slod_time: 0,
+        last_time: 0,
       },
       downloadLoading: false
     }
@@ -264,6 +255,7 @@ export default {
       row.index = rowIndex;
       row.showPin = false;
     },
+    // 格式化时间
     formatTime(row, column) {
       if(row[column.property] == 0){
         return "/"
@@ -289,55 +281,74 @@ export default {
     filterAssembly(value, row) {
       return row.assembly.name === value;
     },
+    // 显示密码
     handleViewClick(row){
       row.showPin = true;
     },
+    // 处理筛选器
     handleFilter() {
       this.listQuery.page = 1
       this.getList()
     },
-    handleLookClick(row){
-      this.dialogLookData = row;
-      console.log("row", row);
-      this.dialogLookVisible = true;
-    },
-    handleModifyStatus(row, status) {
-      this.$message({
-        message: '操作Success',
-        type: 'success'
-      })
-      row.status = status
-    },
-    resetTemp() {
-      this.temp = {
-        id: undefined,
-        importance: 1,
-        remark: '',
-        timestamp: new Date(),
-        title: '',
-        status: 'published',
-        type: ''
+    handleDeviceClick(typ,data){
+      switch(typ){
+        case 'create':
+          this.resetDeviceData()
+          this.$nextTick(() => {
+            this.$refs['deviceDataForm'].clearValidate()
+          })
+          this.dialogDeviceStatus = 'create'
+          this.dialogDeviceTitle = "新建设备"
+          this.dialogDeviceFormVisible = true
+          break;
+        case 'update':
+          this.dialogDeviceStatus = 'update'
+          this.dialogDeviceTitle = "编辑设备"
+          this.deviceData = data
+          this.dialogDeviceFormVisible = true
+          break;
+        case 'look':
+          this.dialogDeviceStatus = 'look'
+          this.dialogDeviceTitle = "查看设备"
+          this.deviceData = data
+          this.dialogDeviceLookVisible = true
+          break;
+        default:
+          break;
       }
     },
-    handleCreate() {
-      this.resetTemp()
-      this.dialogStatus = 'create'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
+    // 重置设备数据
+    resetDeviceData() {
+      this.deviceData = {
+        id: 0,
+        name: '',
+        ouid: '',
+        pin: '',
+        assembly: '',
+        status: 0,
+        license: undefined,
+        product_json: undefined,
+        install_json: undefined,
+        remark: '',
+        created_at: 0,
+        updated_at: 0,
+        installed_at: 0,
+        slod_time: 0,
+        last_time: 0,
+      }
     },
+    // 处理新建设备提交
     createData() {
-      this.$refs['dataForm'].validate((valid) => {
+      this.$refs['deviceDataForm'].validate((valid) => {
         if (valid) {
-          this.temp.id = parseInt(Math.random() * 100) + 1024 // mock a id
-          this.temp.author = 'vue-element-admin'
-          createArticle(this.temp).then(() => {
-            this.list.unshift(this.temp)
-            this.dialogFormVisible = false
+          // this.temp.id = parseInt(Math.random() * 100) + 1024 // mock a id
+          // this.temp.author = 'vue-element-admin'
+          createDevice(this.deviceData).then(() => {
+            this.list.unshift(this.deviceData)
+            this.dialogDeviceFormVisible = false
             this.$notify({
-              title: 'Success',
-              message: 'Created Successfully',
+              title: '请求成功',
+              message: '创建设备成功',
               type: 'success',
               duration: 2000
             })
@@ -345,27 +356,19 @@ export default {
         }
       })
     },
-    handleUpdate(row) {
-      this.temp = Object.assign({}, row) // copy obj
-      this.temp.timestamp = new Date(this.temp.timestamp)
-      this.dialogStatus = 'update'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
-    },
+    // 处理更新设备提交
     updateData() {
-      this.$refs['dataForm'].validate((valid) => {
+      this.$refs['deviceDataForm'].validate((valid) => {
         if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
-          updateArticle(tempData).then(() => {
+          const tempData = Object.assign({}, this.deviceData)
+          // tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
+          updateDevice(tempData).then(() => {
             const index = this.list.findIndex(v => v.id === this.temp.id)
-            this.list.splice(index, 1, this.temp)
-            this.dialogFormVisible = false
+            this.list.splice(index, 1, this.deviceData)
+            this.dialogDeviceFormVisible = false
             this.$notify({
-              title: 'Success',
-              message: 'Update Successfully',
+              title: '请求成功',
+              message: '更新设备成功',
               type: 'success',
               duration: 2000
             })

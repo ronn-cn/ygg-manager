@@ -16,7 +16,7 @@ type Configure struct {
 
 // gorm.Model 的定义
 type Model struct {
-	ID        int64 `json:"id" gorm:"column:id"`
+	ID        int64 `json:"id" gorm:"column:id;default:NULL"`
 	CreatedAt int64 `json:"created_at" gorm:"column:created_at;autoCreateTime;NOT NULL"`
 	UpdatedAt int64 `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 }
@@ -24,16 +24,17 @@ type Model struct {
 // 数据结构表
 type Account struct {
 	Model
-	OUID           string     `json:"ouid" gorm:"column:ouid;primary_key;NOT NULL"`           // 统一标识
-	Name           string     `json:"name" gorm:"column:name;"`                               // 账号名称
-	Account        string     `json:"account" gorm:"column:account;NOT NULL"`                 // 账号
-	Passwd         string     `json:"-" gorm:"column:passwd;NOT NULL"`                        // 密码
-	PermissionType Permission `json:"type" gorm:"ForeignKey:TypeID;AssociationForeignKey:ID"` // 账户权限类型
-	TypeID         int        `json:"type_id" gorm:"column:type;NOT NULL"`                    // 账户权限类型ID
-	Contact        string     `json:"contact" gorm:"column:contact"`                          // 联系方式
-	Detail         string     `json:"detail" gorm:"column:detail"`                            // 详细
-	Status         int        `json:"status" gorm:"column:status;NOT NULL"`                   // 账户状态，启用1 禁用0
-	Company        int        `json:"company" gorm:"column:company"`                          // 账户的单位
+	OUID           string     `json:"ouid" gorm:"column:ouid;primary_key;NOT NULL"`                 // 统一标识
+	Name           string     `json:"name" gorm:"column:name;"`                                     // 账号名称
+	Account        string     `json:"account" gorm:"column:account;NOT NULL"`                       // 账号
+	Passwd         string     `json:"-" gorm:"column:passwd;NOT NULL"`                              // 密码
+	PermissionType Permission `json:"type" gorm:"ForeignKey:TypeID;AssociationForeignKey:ID"`       // 账户权限类型
+	TypeID         int        `json:"type_id" gorm:"column:type;NOT NULL"`                          // 账户权限类型ID
+	Contact        string     `json:"contact" gorm:"column:contact"`                                // 联系方式
+	Detail         string     `json:"detail" gorm:"column:detail"`                                  // 详细
+	Status         int        `json:"status" gorm:"column:status;NOT NULL"`                         // 账户状态，启用1 禁用0
+	Company        Company    `json:"company" gorm:"ForeignKey:CompanyID;AssociationForeignKey:ID"` // 账户单位
+	CompanyID      int        `json:"company_id" gorm:"column:company;default:NULL"`                // 账户的单位id
 	IP             string     `json:"-" gorm:"-"`
 }
 

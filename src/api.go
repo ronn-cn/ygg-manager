@@ -98,7 +98,7 @@ func handleAccount(c *gin.Context, ps []string) {
 			account.OUID = ouid.GenerateOUID()
 			account.Status = 1
 			account.IP = c.ClientIP()
-			if result := PGDB.Create(&account); result.Error == nil {
+			if result := PGDB.Debug().Create(&account); result.Error == nil {
 				fmt.Println("1:", result)
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": account.OUID})
 			} else {
@@ -356,9 +356,9 @@ func handleAssembly(c *gin.Context, ps []string) {
 			c.Status(405)
 			return
 		}
-		var assembly []Assembly
-		PGDB.Find(&assembly)
-		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(assembly), "items": assembly}})
+		var assemblies []Assembly
+		PGDB.Find(&assemblies)
+		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(assemblies), "items": assemblies}})
 	default:
 		c.Status(404)
 		return

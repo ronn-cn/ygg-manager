@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <!-- 新建账号按钮 -->
-    <el-button type="primary" @click="dialogNewAccountVisible = true">新建账号</el-button>
+    <el-button type="primary" @click="handleAccountClick('create',null)">新建账号</el-button>
 
     <!-- 账号列表 -->
     <el-table
@@ -31,17 +31,15 @@
         </template>
       </el-table-column>
       <el-table-column align="center" label="密码">
-        <el-button
-          type="warning"
-          size="mini"
-          icon="el-icon-key"
-          @click="dialogChangePasswdVisible = true"
-        >修改</el-button>
+        <span>******</span>
+        <el-tooltip class="item" effect="light" content="修改密码" placement="bottom-start">
+          <em class="el-icon-edit" style="cursor: pointer" @click="dialogChangePasswdVisible = true"></em>
+        </el-tooltip>
       </el-table-column>
 
       <el-table-column class-name="status-col" label="类型">
         <template slot-scope="{ row }">
-          <el-tag :class="'tag-'+row.type_id">
+          <el-tag :class="'tag tag-'+row.type_id">
             {{ row.type.name }}
           </el-tag>
         </template>
@@ -57,20 +55,11 @@
         </template>
       </el-table-column>
       <el-table-column align="center" label="创建时间" prop="created_at" :formatter="formatTime"></el-table-column>
-      <el-table-column align="center" label="操作">
+      <el-table-column align="center" label="操作" fixed="right" width="150" class-name="small-padding fixed-width">
         <template slot-scope="{ row }">
           <el-link class="el-dropdown-link" type="primary">查看</el-link>&nbsp;
-          <el-link class="el-dropdown-link" type="primary">编辑</el-link>&nbsp;
-          <el-dropdown>
-            <span class="el-dropdown-link">
-              更多<i class="el-icon-arrow-down el-icon--right"></i>
-            </span>
-            <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item>修改密码</el-dropdown-item>
-              <el-dropdown-item>禁用/启用</el-dropdown-item>
-              <el-dropdown-item v-if="info.type_id == 1&&row.type_id != 1">删除账号</el-dropdown-item>
-            </el-dropdown-menu>
-          </el-dropdown>
+          <el-link class="el-dropdown-link" type="primary" @click="handleAccountClick('update',row)">编辑</el-link>&nbsp;
+          <el-link class="el-dropdown-link" v-if="info.type_id == 1||row.type_id > 2">删除</el-link>
         </template>
       </el-table-column>
     </el-table>
@@ -100,37 +89,36 @@
       </span>
     </el-dialog>
 
-    <!-- 新建账号的弹窗 -->
+    <!-- 账号的弹窗 -->
     <el-dialog
-      title="新建账号"
-      :visible.sync="dialogNewAccountVisible"
+      :title="dialogDeviceTitle"
+      :visible.sync="dialogAccountFormVisible"
       width="60%"
-      :before-close="closePostAccountForm"
     >
-      <el-form ref="accountForm" :model="accountForm" label-position="left" label-width="70px">
+      <el-form :model="accountData" ref="accountData" label-position="left" label-width="70px">
         <el-form-item label="名称" prop="name">
-          <el-input v-model="accountForm.name" placeholder="请输入名称"/>
+          <el-input v-model="accountData.name" placeholder="请输入名称"/>
         </el-form-item>
         <el-form-item label="账号" prop="account">
-          <el-input v-model="accountForm.account" placeholder="请输入账号"/>
+          <el-input v-model="accountData.account" placeholder="请输入账号"/>
         </el-form-item>
         <el-form-item label="密码" prop="passwd">
-          <el-input v-model="accountForm.passwd" placeholder="请输入密码" show-password/>
+          <el-input v-model="accountData.passwd" placeholder="请输入密码" show-password/>
         </el-form-item>
         <el-form-item label="类型" prop="type_id">
-          <el-select v-model="accountForm.type_id" class="filter-item" placeholder="请选择类型">
+          <el-select v-model="accountData.type_id" class="filter-item" placeholder="请选择类型">
             <el-option v-for="item in accountTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="联系方式" prop="contact">
-          <el-input v-model="accountForm.contact" placeholder="请输入联系方式"/>
+          <el-input v-model="accountData.contact" placeholder="请输入联系方式"/>
         </el-form-item>
         <el-form-item label="简介" prop="detail">
-          <el-input v-model="accountForm.detail" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="请输入简介" />
+          <el-input v-model="accountData.detail" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="请输入简介" />
         </el-form-item>
         <el-form-item>
-            <el-button @click="closePostAccountForm()">取 消</el-button>
-            <el-button type="primary" @click="submitPostAccountForm">提 交</el-button>
+            <el-button @click="dialogAccountFormVisible = false">取 消</el-button>
+            <el-button type="primary" @click="dialogAccountStatus==='create'?createAccountData():updateAccountData()">提 交</el-button>
         </el-form-item>
       </el-form>
     </el-dialog>
@@ -146,22 +134,22 @@
 import { mapGetters } from 'vuex'
 import { getAccountList,postAccount } from '@/api/account'
 export default {
-  name: 'InlineEditTable',
-  filters: {
-    statusFilter(status) {
-      const statusMap = {
-        published: "success",
-        draft: "info",
-        deleted: "danger",
-      };
-      return statusMap[status];
-    },
-  },
+  name: 'AccountTable',
+  filters: {},
   data() {
     return {
       passwd1: "",
       passwd2: "",
-      accountForm:{
+
+      list: null,
+      listLoading: true,
+      
+      dialogDeviceTitle: '',
+      dialogAccountStatus: '',
+      dialogAccountFormVisible: false,
+      dialogAccountLookVisible: false,
+      dialogChangePasswdVisible: false,
+      accountData:{
         name:'',
         account:'',
         passwd:'',
@@ -169,10 +157,6 @@ export default {
         contact:'',
         detail:'',
       },
-      dialogChangePasswdVisible: false,
-      dialogNewAccountVisible: false,
-      list: null,
-      listLoading: true,
       accountTypeOptions: [{
         value: 2,
         label: '管理'
@@ -191,7 +175,7 @@ export default {
       }, {
         value: 7,
         label: '客户'
-      }],
+      }], 
     };
   },
   computed: {
@@ -236,6 +220,7 @@ export default {
     tableRowClassName({row,rowIndex}){
       row.index = rowIndex;
     },
+    // 格式化时间函数
     formatTime(row, column) {
       if(row[column.property] == 0){
         return "/"
@@ -255,21 +240,85 @@ export default {
         return y + '-' + mo + '-' + d + ' ' + h + ':' + mi + ':' + s
       }
     },
-    submitPostAccountForm() { //创建账号表单提交
-      console.log(JSON.stringify(this.accountForm))
-      postAccount(JSON.stringify(this.accountForm)).then((result)=>{
-        console.log(result)
-      }).catch((error)=>{
-        console.log(error)
-      })
-      closePostAccountForm()
+    // 重置设备数据
+    resetAccountData() {
+      this.accountData = {
+        name:'',
+        account:'',
+        passwd:'',
+        type_id:4,
+        contact:'',
+        detail:'',
+      }
     },
-    closePostAccountForm(){
-      this.$refs['accountForm'].resetFields();
-      this.dialogNewAccountVisible = false
+    handleAccountClick(typ,data){
+      switch(typ){
+        case 'create':
+          console.log(this.$refs)
+          this.$nextTick(() => {
+            if (this.$refs['accountData']!==undefined) {
+              this.$refs['accountData'].resetFields();
+            }
+          })
+          this.dialogAccountStatus = 'create'
+          this.dialogAccountTitle = "新建账号"
+          this.resetAccountData()
+          this.dialogAccountFormVisible = true
+          break;
+        case 'update':
+          this.dialogAccountStatus = 'update'
+          this.dialogAccountTitle = "编辑设备"
+          this.accountData = data
+          this.dialogAccountFormVisible = true
+          break;
+        case 'look':
+          this.dialogAccountStatus = 'look'
+          this.dialogAccountTitle = "查看设备"
+          this.accountData = data
+          this.dialogAccountLookVisible = true
+          break;
+        default:
+          break;
+      }
+    },
+    createAccountData() {
+      this.$refs['accountData'].validate((valid) => {
+        if (valid) {
+          console.log(JSON.stringify(this.accountData))
+          postAccount(JSON.stringify(this.accountData)).then(() => {
+            this.list.unshift(this.accountData)
+            this.dialogAccountFormVisible = false
+            this.$notify({
+              title: '请求成功',
+              message: '创建账号成功',
+              type: 'success',
+              duration: 2000
+            })
+          }).catch((error)=>{
+            console.log(error)
+          })
+        }
+      })
+    },
+    updateAccountData(){
+      this.$refs['accountData'].validate((valid) => {
+        if (valid) {
+          const tempData = Object.assign({}, this.accountData)
+          updateDevice(tempData).then(() => {
+            const index = this.list.findIndex(v => v.id === this.accountData.id)
+            this.list.splice(index, 1, this.accountData)
+            this.dialogAccountFormVisible = false
+            this.$notify({
+              title: '请求成功',
+              message: '更新账号成功',
+              type: 'success',
+              duration: 2000
+            })
+          })
+        }
+      })
     },
     submiteChangePasswdForm() {
-      
       closeChangePasswdForm()
     },
     closeChangePasswdForm(){
@@ -297,6 +346,9 @@ export default {
 }
 .passwd-input {
   margin-top: 10px;
+}
+.tag{
+  border: 0;
 }
 /* 超级管理员 */
 .tag-1 {

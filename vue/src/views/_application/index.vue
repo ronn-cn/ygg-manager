@@ -1,70 +1,65 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <el-input v-model="listQuery.title" placeholder="应用名称" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
-      <el-input v-model="listQuery.title" placeholder="APPID" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
-      <el-select v-model="listQuery.importance" placeholder="类型" clearable style="width: 90px" class="filter-item">
-        <el-option v-for="item in importanceOptions" :key="item" :label="item" :value="item" />
+      <!-- 新建应用按钮 -->
+      <el-button class="filter-item" type="primary" @click="dialogNewApplicationVisible = true"> 新建应用 </el-button> 
+
+      <el-input v-model="listQuery.name" placeholder="应用名称" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
+      <el-input v-model="listQuery.appid" placeholder="APPID" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
+      <el-select v-model="listQuery.type" placeholder="应用类型" clearable style="width: 120px" class="filter-item">
+        <!-- <el-option v-for="item in importanceOptions" :key="item" :label="item" :value="item" /> -->
       </el-select>
-      <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">
-        搜 索
-      </el-button>
+      <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter"> 搜 索 </el-button>
     </div>
     <el-table
-      :key="tableKey"
       v-loading="listLoading"
       :data="list"
       border
-      fit
-      highlight-current-row
-      style="width: 100%;"
-      @sort-change="sortChange"
+      stripe
+      :row-class-name="tableRowClassName"
     >
-      <el-table-column label="ID" prop="id" sortable="custom" align="center" width="80" :class-name="getSortClass('id')">
+      <el-table-column label="序号" align="center" width="80">
         <template slot-scope="{row}">
-          <span>{{ row.id }}</span>
+          <span>{{ row.index }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="APPID" width="150px" align="center">
+      <el-table-column label="应用名称" min-width="150">
         <template slot-scope="{row}">
-          <span>{{ row.timestamp | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+          <span>{{ row.name }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="应用名称" min-width="150px">
+      <el-table-column label="APPID" min-width="150" align="center">
         <template slot-scope="{row}">
-          <span class="link-type" @click="handleUpdate(row)">{{ row.title }}</span>
-          <el-tag>{{ row.type | typeFilter }}</el-tag>
+          <span>{{ row.appid }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="类型" width="110px" align="center">
+      <el-table-column label="应用类型" min-width="110" align="center">
         <template slot-scope="{row}">
-          <span>{{ row.author }}</span>
+          <span>{{ row.type }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="最新版本" width="110px" align="center">
+      <el-table-column label="最新版本" min-width="110" align="center">
         <template slot-scope="{row}">
-          <span style="color:red;">{{ row.reviewer }}</span>
+          <span style="color:red;">{{ row.latest }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" width="80px">
+
+      <el-table-column label="创建时间" align="center" sortable prop="created_at" :formatter="formatTime"></el-table-column>
+
+      <el-table-column label="操作" align="center" fixed="right" width="150" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <svg-icon v-for="n in + row.importance" :key="n" icon-class="star" class="meta-item__icon" />
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width">
-        <template slot-scope="{row,$index}">
-          <el-button type="primary" size="mini" @click="handleUpdate(row)">
-            Edit
-          </el-button>
-          <el-button v-if="row.status!='published'" size="mini" type="success" @click="handleModifyStatus(row,'published')">
-            Publish
-          </el-button>
-          <el-button v-if="row.status!='draft'" size="mini" @click="handleModifyStatus(row,'draft')">
-            Draft
-          </el-button>
-          <el-button v-if="row.status!='deleted'" size="mini" type="danger" @click="handleDelete(row,$index)">
-            Delete
-          </el-button>
+          <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('look',row)">查看</el-link>&nbsp;
+          <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('update',row)">编辑</el-link>&nbsp;
+          <el-dropdown>
+            <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
+            <el-dropdown-menu slot="dropdown">
+              <el-dropdown-item>修改密码</el-dropdown-item>
+              <el-dropdown-item>禁用/启用</el-dropdown-item>
+              <el-dropdown-item>删除</el-dropdown-item>
+              <el-dropdown-item>下载</el-dropdown-item>
+              <el-dropdown-item>更新</el-dropdown-item>
+            </el-dropdown-menu>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
@@ -211,6 +206,9 @@ export default {
         this.listLoading = false
       })
     },
+    tableRowClassName({row,rowIndex}){
+      row.index = rowIndex;
+    },
     handleFilter() {
       this.listQuery.page = 1
       this.getList()
@@ -348,9 +346,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.filter-container{
-  .filter-item{
-    margin-right: 20px;
+  .filter-container{
+    .filter-item{
+      margin-right: 20px;
+    }
   }
-}
+
+  .el-dropdown-link {
+    cursor: pointer;
+    color: #409EFF;
+  }
 </style>

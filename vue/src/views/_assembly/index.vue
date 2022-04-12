@@ -1,67 +1,54 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <!-- 新建账号按钮 -->
-      <el-button class="filter-item"  type="primary" @click="dialogNewAccountVisible = true"> 新建账号 </el-button> 
+      <!-- 新建系统按钮 -->
+      <el-button class="filter-item"  type="primary" @click="dialogNewAccountVisible = true"> 新建系统 </el-button> 
       <el-input v-model="listQuery.title" placeholder="系统名称" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
       <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter"> 搜 索 </el-button>
     </div>
     <el-table
-      :key="tableKey"
       v-loading="listLoading"
       :data="list"
       border
-      fit
-      highlight-current-row
-      style="width: 100%;"
-      @sort-change="sortChange"
+      stripe
+      :row-class-name="tableRowClassName"
     >
-      <el-table-column label="ID" prop="id" sortable="custom" align="center" width="80" :class-name="getSortClass('id')">
+      <el-table-column label="序号" align="center" width="80">
         <template slot-scope="{row}">
-          <span>{{ row.id }}</span>
+          <span>{{ row.index }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="OUID" width="150px" align="center">
+      <el-table-column label="系统名称" min-width="150">
         <template slot-scope="{row}">
-          <span>{{ row.timestamp | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+          <span>{{ row.name }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="名称" min-width="150px">
+      <el-table-column label="OUID" align="center" min-width="150" show-overflow-tooltip>
         <template slot-scope="{row}">
-          <span class="link-type" @click="handleUpdate(row)">{{ row.title }}</span>
-          <el-tag>{{ row.type | typeFilter }}</el-tag>
+          <span>{{ row.ouid }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="关系" width="110px" align="center">
+      <el-table-column label="依赖关系" min-width="110">
         <template slot-scope="{row}">
-          <span>{{ row.author }}</span>
+          <span>{{ row.relation }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" width="80px">
+      <el-table-column label="创建时间" align="center" sortable prop="created_at" :formatter="formatTime"></el-table-column>
+      <el-table-column label="更新时间" align="center" sortable prop="updated_at" :formatter="formatTime"></el-table-column>
+      <el-table-column label="操作" align="center" fixed="right" width="150" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <svg-icon v-for="n in + row.importance" :key="n" icon-class="star" class="meta-item__icon" />
-        </template>
-      </el-table-column>
-      <el-table-column label="更新时间" align="center" width="95">
-        <template slot-scope="{row}">
-          <span v-if="row.pageviews" class="link-type" @click="handleFetchPv(row.pageviews)">{{ row.pageviews }}</span>
-          <span v-else>0</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width">
-        <template slot-scope="{row,$index}">
-          <!-- <el-button type="primary" size="mini" @click="handleUpdate(row)">
-            Edit
-          </el-button>
-          <el-button v-if="row.status!='published'" size="mini" type="success" @click="handleModifyStatus(row,'published')">
-            Publish
-          </el-button>
-          <el-button v-if="row.status!='draft'" size="mini" @click="handleModifyStatus(row,'draft')">
-            Draft
-          </el-button>
-          <el-button v-if="row.status!='deleted'" size="mini" type="danger" @click="handleDelete(row,$index)">
-            Delete
-          </el-button> -->
+          <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('look',row)">查看</el-link>&nbsp;
+          <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('update',row)">编辑</el-link>&nbsp;
+          <el-dropdown>
+            <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
+            <el-dropdown-menu slot="dropdown">
+              <el-dropdown-item>修改密码</el-dropdown-item>
+              <el-dropdown-item>禁用/启用</el-dropdown-item>
+              <el-dropdown-item>删除</el-dropdown-item>
+              <el-dropdown-item>下载</el-dropdown-item>
+              <el-dropdown-item>更新</el-dropdown-item>
+            </el-dropdown-menu>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
@@ -160,10 +147,7 @@ export default {
       listQuery: {
         page: 1,
         limit: 20,
-        importance: undefined,
         title: undefined,
-        type: undefined,
-        sort: '+id'
       },
       importanceOptions: [1, 2, 3],
       calendarTypeOptions,
@@ -207,6 +191,29 @@ export default {
 
         this.listLoading = false
       })
+    },
+    tableRowClassName({row,rowIndex}){
+      row.index = rowIndex;
+    },
+    // 格式化时间
+    formatTime(row, column) {
+      if(row[column.property] == 0){
+        return "/"
+      } else {
+        const date = new Date(row[column.property]*1000)
+        let y = date.getFullYear()
+        let mo = date.getMonth() + 1
+        if (mo < 10){ mo = '0' + mo }
+        let d = date.getDate()
+        if (d < 10){ d = '0' + d }
+        let h = date.getHours()
+        if (h < 10){ h = '0' + h }
+        let mi = date.getMinutes()
+        if (mi < 10){ mi = '0' + mi }
+        let s = date.getSeconds()
+        if (s < 10){ s = '0' + s }
+        return y + '-' + mo + '-' + d + ' ' + h + ':' + mi + ':' + s
+      }
     },
     handleFilter() {
       this.listQuery.page = 1
@@ -345,9 +352,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.filter-container{
-  .filter-item{
-    margin-right: 20px;
+  .filter-container{
+    .filter-item{
+      margin-right: 20px;
+    }
   }
-}
+
+  .el-dropdown-link {
+    cursor: pointer;
+    color: #409EFF;
+  }
 </style>
