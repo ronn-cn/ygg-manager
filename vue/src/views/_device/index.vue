@@ -145,7 +145,6 @@
       </el-form>
     </el-dialog>
 
-    <!-- 设备编辑弹窗 -->
   </div>
 </template>
 

@@ -10,11 +10,30 @@ export function getAccountList(query) {
 }
 
 // 创建账号
-export function postAccount(data) {
+export function createAccount(data) {
   return request({
-    url: '/account/post-account',
+    url: '/account/create-account',
     method: 'post',
     data
+  })
+}
+
+// 更新账号
+export function updateAccount(data) {
+  return request({
+    url: '/account/update-account',
+    method: 'put',
+    data
+  })
+}
+
+// 删除账号
+export function deleteAccount(ouid) {
+  console.log("ouid:",ouid)
+  return request({
+    url: '/account/delete-account',
+    method: 'delete',
+    params: {"ouid":ouid}
   })
 }
 

@@ -85,39 +85,23 @@ func handleAccount(c *gin.Context, ps []string) {
 		return
 	}
 	switch ps[1] {
-	case "get-account-list":
-		getAccountList(c)
-	case "post-account":
-		if c.Request.Method != "POST" {
-			c.Status(405)
-			return
-		}
-		// 创建账号
-		var account Account
-		if err := c.BindJSON(&account); err == nil {
-			account.OUID = ouid.GenerateOUID()
-			account.Status = 1
-			account.IP = c.ClientIP()
-			if result := PGDB.Debug().Create(&account); result.Error == nil {
-				fmt.Println("1:", result)
-				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": account.OUID})
-			} else {
-				fmt.Println("2:", result)
-				c.JSON(200, gin.H{"errcode": 10203, "errmsg": "创建数据错误"})
-			}
-		} else {
-			logger.Debugf("%v", err)
-			c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
-		}
-	case "get-account-info":
-		getAccountInfo(c)
-	case "get-account-permission":
-		getAccountPermissions(c)
 	case "login":
 		login(c)
 	case "logout":
 		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功"})
 		return
+	case "get-account-list":
+		getAccountList(c)
+	case "get-account-info":
+		getAccountInfo(c)
+	case "get-account-permission":
+		getAccountPermissions(c)
+	case "create-account":
+		createAccount(c)
+	case "update-account":
+		updateAccount(c)
+	case "delete-account":
+		deleteAccount(c)
 	default:
 		c.Status(404)
 		return
@@ -174,7 +158,7 @@ func getAccountList(c *gin.Context) {
 		// }
 
 		// 查询数据库操作
-		var accounts []Account
+		var accounts []AccountApi
 		if account.TypeID == 1 {
 			PGDB.Preload("PermissionType").Find(&accounts)
 		} else {
@@ -239,6 +223,79 @@ func getAccountPermissions(c *gin.Context) {
 	}
 }
 
+// 创建账号
+func createAccount(c *gin.Context) {
+	if c.Request.Method != "POST" {
+		c.Status(405)
+		return
+	}
+	// 创建账号
+	var account Account
+	if err := c.BindJSON(&account); err == nil {
+		account.OUID = ouid.GenerateOUID()
+		account.Status = 1
+		account.IP = c.ClientIP()
+		logger.Debugf("提交的密码：%v", account.Passwd)
+		account.Passwd = SHA256(account.Passwd + "woshiyanzhi")
+		if result := PGDB.Debug().Create(&account); result.Error == nil {
+			fmt.Println("1:", result)
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": account.OUID})
+		} else {
+			fmt.Println("2:", result)
+			c.JSON(200, gin.H{"errcode": 10203, "errmsg": "创建数据错误"})
+		}
+	} else {
+		logger.Debugf("%v", err)
+		c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
+	}
+}
+
+// 更新账号
+func updateAccount(c *gin.Context) {
+	if c.Request.Method != "PUT" {
+		c.Status(405)
+		return
+	}
+	var account Account
+	if err := c.BindJSON(&account); err == nil {
+		account.IP = c.ClientIP()
+		if account.Passwd != "" { // 修改密码操作
+			if result := PGDB.Debug().Model(&Account{OUID: account.OUID}).Update("passwd", SHA256(account.Passwd+"woshiyanzhi")); result.Error == nil {
+				account.Passwd = ""
+				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": account})
+			} else {
+				c.JSON(200, gin.H{"errcode": 10204, "errmsg": "更新数据错误"})
+			}
+		} else {
+			if result := PGDB.Debug().Model(&Account{OUID: account.OUID}).Select("Name", "Account", "TypeID", "Contact", "Detail", "Status").Updates(&account); result.Error == nil {
+				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": account})
+			} else {
+				c.JSON(200, gin.H{"errcode": 10204, "errmsg": "更新数据错误"})
+			}
+		}
+	} else {
+		logger.Debugf("%v", err)
+		c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
+	}
+}
+
+// 删除账号
+func deleteAccount(c *gin.Context) {
+	if c.Request.Method != "DELETE" {
+		c.Status(405)
+		return
+	}
+	// 删除账号
+	ouidstr := c.Query("ouid")
+	logger.Debugf("请求的OUID：%v", ouidstr)
+	if result := PGDB.Debug().Where("ouid = ?", ouidstr).Delete(&Account{}); result.Error == nil {
+		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": ouidstr})
+	} else {
+		fmt.Println("数据库返回的结构:", result)
+		c.JSON(200, gin.H{"errcode": 10205, "errmsg": "删除数据错误"})
+	}
+}
+
 func login(c *gin.Context) {
 	if c.Request.Method != "POST" {
 		c.Status(405)
@@ -257,7 +314,7 @@ func login(c *gin.Context) {
 				c.JSON(200, gin.H{"errcode": 10101, "errmsg": "账号禁用"})
 				return
 			}
-			passwd := passwdStr + "woshishen"     // 将提交的密码加上盐值（woshishen）后哈希对比
+			passwd := passwdStr + "woshiyanzhi"   // 将提交的密码加上盐值（woshiyanzhi）后哈希对比
 			if account.Passwd == SHA256(passwd) { // 判断密码正确
 				othData := make(map[string]interface{})
 				othData["account"] = accountStr

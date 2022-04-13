@@ -16,7 +16,7 @@ type Configure struct {
 
 // gorm.Model 的定义
 type Model struct {
-	ID        int64 `json:"id" gorm:"column:id;default:NULL"`
+	ID        int64 `json:"id" gorm:"column:id;autoIncrement;default:NULL"`
 	CreatedAt int64 `json:"created_at" gorm:"column:created_at;autoCreateTime;NOT NULL"`
 	UpdatedAt int64 `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 }
@@ -24,28 +24,48 @@ type Model struct {
 // 数据结构表
 type Account struct {
 	Model
-	OUID           string     `json:"ouid" gorm:"column:ouid;primary_key;NOT NULL"`                 // 统一标识
-	Name           string     `json:"name" gorm:"column:name;"`                                     // 账号名称
-	Account        string     `json:"account" gorm:"column:account;NOT NULL"`                       // 账号
-	Passwd         string     `json:"-" gorm:"column:passwd;NOT NULL"`                              // 密码
-	PermissionType Permission `json:"type" gorm:"ForeignKey:TypeID;AssociationForeignKey:ID"`       // 账户权限类型
-	TypeID         int        `json:"type_id" gorm:"column:type;NOT NULL"`                          // 账户权限类型ID
-	Contact        string     `json:"contact" gorm:"column:contact"`                                // 联系方式
-	Detail         string     `json:"detail" gorm:"column:detail"`                                  // 详细
-	Status         int        `json:"status" gorm:"column:status;NOT NULL"`                         // 账户状态，启用1 禁用0
-	Company        Company    `json:"company" gorm:"ForeignKey:CompanyID;AssociationForeignKey:ID"` // 账户单位
-	CompanyID      int        `json:"company_id" gorm:"column:company;default:NULL"`                // 账户的单位id
-	IP             string     `json:"-" gorm:"-"`
+	OUID           string      `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`                  // 统一标识
+	Name           string      `json:"name" gorm:"column:name;"`                                     // 账号名称
+	Account        string      `json:"account" gorm:"column:account;NOT NULL"`                       // 账号
+	Passwd         string      `json:"passwd" gorm:"column:passwd;NOT NULL"`                         // 密码
+	PermissionType *Permission `json:"type" gorm:"ForeignKey:TypeID;AssociationForeignKey:ID"`       // 账户权限类型
+	TypeID         int         `json:"type_id" gorm:"column:type;NOT NULL"`                          // 账户权限类型ID
+	Contact        string      `json:"contact" gorm:"column:contact"`                                // 联系方式
+	Detail         string      `json:"detail" gorm:"column:detail"`                                  // 详细
+	Status         int         `json:"status" gorm:"column:status;NOT NULL"`                         // 账户状态，启用1 禁用0
+	Company        *Company    `json:"company" gorm:"ForeignKey:CompanyID;AssociationForeignKey:ID"` // 账户单位
+	CompanyID      int         `json:"company_id" gorm:"column:company;default:NULL"`                // 账户的单位id
+	IP             string      `json:"-" gorm:"-"`
 }
 
 func (Account) TableName() string {
 	return "m_accounts"
 }
 
+// 返回账号接口类
+type AccountApi struct {
+	Model
+	OUID           string      `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`                  // 统一标识
+	Name           string      `json:"name" gorm:"column:name;"`                                     // 账号名称
+	Account        string      `json:"account" gorm:"column:account;NOT NULL"`                       // 账号
+	PermissionType *Permission `json:"type" gorm:"ForeignKey:TypeID;AssociationForeignKey:ID"`       // 账户权限类型
+	TypeID         *int        `json:"type_id" gorm:"column:type;NOT NULL"`                          // 账户权限类型ID
+	Contact        string      `json:"contact" gorm:"column:contact"`                                // 联系方式
+	Detail         string      `json:"detail" gorm:"column:detail"`                                  // 详细
+	Status         int         `json:"status" gorm:"column:status;NOT NULL"`                         // 账户状态，启用1 禁用0
+	Company        *Company    `json:"company" gorm:"ForeignKey:CompanyID;AssociationForeignKey:ID"` // 账户单位
+	CompanyID      *int        `json:"company_id" gorm:"column:company"`                             // 账户的单位id
+	IP             string      `json:"-" gorm:"-"`
+}
+
+func (AccountApi) TableName() string {
+	return "m_accounts"
+}
+
 type Permission struct {
-	ID        int    `json:"id" gorm:"column:id;primary_key;NOT NULL"` // 自增ID
-	Name      string `json:"name" gorm:"column:name;NOT NULL"`         // 权限类名称
-	AllowMenu string `json:"allow_menu" gorm:"column:allow_menu"`      // 允许使用的菜单列表，逗号,分割
+	ID        int    `json:"id" gorm:"column:id;primaryKey;NOT NULL"` // 自增ID
+	Name      string `json:"name" gorm:"column:name;NOT NULL"`        // 权限类名称
+	AllowMenu string `json:"allow_menu" gorm:"column:allow_menu"`     // 允许使用的菜单列表，逗号,分割
 }
 
 func (Permission) TableName() string {
@@ -54,7 +74,7 @@ func (Permission) TableName() string {
 
 type Device struct {
 	Model
-	OUID         string       `json:"ouid" gorm:"column:ouid;primary_key;NOT NULL"`                       // 统一标识
+	OUID         string       `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`                        // 统一标识
 	Name         string       `json:"name" gorm:"column:name"`                                            // 设备名称
 	PIN          string       `json:"pin" gorm:"column:pin"`                                              // 设备PIN码
 	Assembly     Assembly     `json:"assembly" gorm:"ForeignKey:AssemblyOUID;AssociationForeignKey:OUID"` // 设备系统
@@ -82,7 +102,7 @@ func (Device) TableName() string {
 
 type Assembly struct {
 	Model
-	OUID           string  `json:"ouid" gorm:"column:ouid;primary_key;NOT NULL"`                   // 统一标识
+	OUID           string  `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`                    // 统一标识
 	Name           string  `json:"name" gorm:"column:name"`                                        // 系统名称
 	Relation       string  `json:"relation" gorm:"column:relation"`                                // 关系
 	CreatorAccount Account `json:"creator" gorm:"ForeignKey:CreatorID;AssociationForeignKey:OUID"` // 创建者
@@ -95,7 +115,7 @@ func (Assembly) TableName() string {
 
 type License struct {
 	Model
-	Code           string  `json:"code" gorm:"column:code;primary_key;NOT NULL"`                   // 授权码
+	Code           string  `json:"code" gorm:"column:code;primaryKey;NOT NULL"`                    // 授权码
 	Count          int     `json:"count" gorm:"column:count"`                                      // 授权注册数量
 	Permit         string  `json:"permit" gorm:"column:permit"`                                    // 允许注册的系统
 	ExpiresAt      string  `json:"expires_at" gorm:"column:expires_at"`                            // 过期时间
@@ -110,8 +130,8 @@ func (License) TableName() string {
 }
 
 type DeviceStatus struct {
-	ID   int    `json:"id" gorm:"column:id;primary_key;NOT NULL"` // 自增id
-	Name string `json:"name" gorm:"column:name"`                  // 设备状态名称
+	ID   int    `json:"id" gorm:"column:id;primaryKey;NOT NULL"` // 自增id
+	Name string `json:"name" gorm:"column:name"`                 // 设备状态名称
 }
 
 func (DeviceStatus) TableName() string {
@@ -119,7 +139,7 @@ func (DeviceStatus) TableName() string {
 }
 
 type Company struct {
-	ID          int64  `json:"id" gorm:"column:id;primary_key;NOT NULL"`           // 自增ID
+	ID          int64  `json:"id" gorm:"column:id;primaryKey;NOT NULL"`            // 自增ID
 	Name        string `json:"name" gorm:"column:name"`                            // 单位名称
 	Type        string `json:"type" gorm:"column:type"`                            // 单位类型
 	Address     string `json:"address" gorm:"column:address"`                      // 单位地址
@@ -137,7 +157,7 @@ func (Company) TableName() string {
 
 type Application struct {
 	Model
-	Appid          string  `json:"appid" gorm:"column:appid;primary_key;NOT NULL"`                 // 应用ID
+	Appid          string  `json:"appid" gorm:"column:appid;primaryKey;NOT NULL"`                  // 应用ID
 	Name           string  `json:"name" gorm:"column:name"`                                        // 应用名称
 	Type           int     `json:"type" gorm:"column:type"`                                        // 应用类型
 	Latest         string  `json:"latest" gorm:"column:latest"`                                    // 应用最新版本
@@ -150,7 +170,7 @@ func (Application) TableName() string {
 }
 
 type Version struct {
-	ID             int64   `json:"id" gorm:"column:id;primary_key;NOT NULL"`                       // 自增ID
+	ID             int64   `json:"id" gorm:"column:id;primaryKey;NOT NULL"`                        // 自增ID
 	Version        string  `json:"version" gorm:"column:version"`                                  // 版本号
 	Appid          string  `json:"appid" gorm:"column:appid"`                                      // 应用id
 	Method         int     `json:"method" gorm:"column:method"`                                    // 更新方式
@@ -166,9 +186,9 @@ func (Version) TableName() string {
 }
 
 type Setting struct {
-	ID    int64  `json:"id" gorm:"column:id;primary_key;NOT NULL"` // 自增ID
-	Key   string `json:"key" gorm:"column:key;NOT NULL"`           // Key
-	Value string `json:"value" gorm:"column:value"`                // Value
+	ID    int64  `json:"id" gorm:"column:id;primaryKey;NOT NULL"` // 自增ID
+	Key   string `json:"key" gorm:"column:key;NOT NULL"`          // Key
+	Value string `json:"value" gorm:"column:value"`               // Value
 }
 
 func (Setting) TableName() string {
@@ -176,7 +196,7 @@ func (Setting) TableName() string {
 }
 
 type Record struct {
-	ID        int64  `json:"id" gorm:"column:id;primary_key;NOT NULL"`           // 自增ID
+	ID        int64  `json:"id" gorm:"column:id;primaryKey;NOT NULL"`            // 自增ID
 	Type      int    `json:"type" gorm:"column:type"`                            // 日志类型
 	Record    string `json:"record" gorm:"column:record"`                        // 日志记录
 	CreatedAt int64  `json:"created_at" gorm:"column:created_at;autoCreateTime"` // 创建时间
@@ -187,9 +207,9 @@ func (Record) TableName() string {
 }
 
 type Menu struct {
-	ID   int64  `json:"id" gorm:"column:id;primary_key;NOT NULL"` // 自增ID
-	Name string `json:"name" gorm:"column:name"`                  // 菜单名称
-	Path string `json:"path" gorm:"column:path"`                  // 菜单路径
+	ID   int64  `json:"id" gorm:"column:id;primaryKey;NOT NULL"` // 自增ID
+	Name string `json:"name" gorm:"column:name"`                 // 菜单名称
+	Path string `json:"path" gorm:"column:path"`                 // 菜单路径
 }
 
 func (Menu) TableName() string {
