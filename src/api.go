@@ -57,8 +57,8 @@ func handleManagerApi(c *gin.Context) {
 		handleAccount(c, ps)
 	case "device":
 		handleDevice(c, ps)
-	case "assembly":
-		handleAssembly(c, ps)
+	case "system":
+		handleSystem(c, ps)
 	case "application":
 		handleApplication(c, ps)
 	case "license":
@@ -71,26 +71,6 @@ func handleManagerApi(c *gin.Context) {
 		handleSetting(c, ps)
 	default:
 		c.Status(404)
-	}
-}
-
-func handleAssembly(c *gin.Context, ps []string) {
-	if len(ps) < 1 {
-		c.Status(404)
-		return
-	}
-	switch ps[1] {
-	case "get-assembly-list": // 查询系统列表
-		if c.Request.Method != "GET" {
-			c.Status(405)
-			return
-		}
-		var assemblies []Assembly
-		PGDB.Find(&assemblies)
-		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(assemblies), "items": assemblies}})
-	default:
-		c.Status(404)
-		return
 	}
 }
 

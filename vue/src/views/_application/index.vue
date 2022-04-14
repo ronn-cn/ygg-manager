@@ -67,7 +67,7 @@
 
     <!-- 添加编辑应用弹窗 -->
     <el-dialog :title="dialogApplicationFormTitle" :visible.sync="dialogApplicationFormVisible">
-      <el-form ref="appData" :model="appData" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;">
+      <el-form ref="appData" :model="appData" label-position="center" label-width="100px">
         <el-form-item label="Appid" prop="appid">
           <el-input v-model="appData.appid" placeholder="不填写，默认自动生成Appid"/>
         </el-form-item>
@@ -78,6 +78,19 @@
           <el-select v-model="appData.type" class="filter-item" placeholder="Please select">
             <el-option v-for="item in appTypeOptions" :key="item.text" :label="item.text" :value="item.value" />
           </el-select>
+        </el-form-item>
+
+        <el-form-item label="依赖" prop="depend">
+          <el-cascader
+            placeholder="试试搜索：**应用"
+            v-model="appData.dependarr"
+            :options="optionsAppData(appData.appid)"
+            :props="{ multiple: true }"
+            separator=","
+            filterable
+            clearable
+            >
+          </el-cascader>
         </el-form-item>
         <el-form-item v-if="info.type_id == 3">
           <el-checkbox v-model="appData.status">发布为正式应用</el-checkbox>
@@ -134,6 +147,8 @@ export default {
         type: 0,
         latest: '',
         status: 1,
+        depend:'',
+        dependarr:[],
       },
       dialogApplicationFormStatus: '',      // 应用表单弹窗状态
       dialogApplicationFormTitle: '',       // 应用表单弹窗标题
@@ -150,7 +165,6 @@ export default {
       getApplicationList(this.listQuery).then(response => {
         this.list = response.data.items
         this.total = response.data.total
-
         this.listLoading = false
       })
     },
@@ -197,6 +211,19 @@ export default {
         status: 1,
       }
     },
+    optionsAppData(appid){
+      let appOptions = []
+      for (let i = 0; i < this.list.length; i++){
+        if (this.list[i].appid != appid){
+          let item = {
+            value: this.list[i].appid,
+            label: this.list[i].name+"["+this.list[i].appid+"]",
+          }
+          appOptions.push(item)
+        }
+      }
+      return appOptions
+    },
     // 处理应用管理的点击
     handleApplicationClick(typ,data){
       switch(typ){
@@ -213,6 +240,7 @@ export default {
           this.dialogApplicationFormStatus = 'update'
           this.dialogApplicationFormTitle = "编辑应用"
           this.appData = data
+          this.appData.dependarr = this.appData.depend.split(',')
           this.dialogApplicationFormVisible = true
           break;
         case 'look':
@@ -228,6 +256,8 @@ export default {
     createAppData() {
       this.$refs['appData'].validate((valid) => {
         if (valid) {
+          console.log("this.appData:",this.appData)
+          this.appData.depend = this.appData.dependarr.toString()
           createApplication(this.appData).then(() => {
             this.getList()
             this.dialogApplicationFormVisible = false

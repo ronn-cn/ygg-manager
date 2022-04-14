@@ -1,18 +1,18 @@
 import request from '@/utils/request'
 
 // 查询系统列表
-export function getAssemblyList(query) {
+export function getSystemList(query) {
   return request({
-    url: '/assembly/get-assembly-list',
+    url: '/system/get-system-list',
     method: 'get',
     params: query
   })
 }
 
 // 创建系统
-export function createAssembly(data) {
+export function createSystem(data) {
   return request({
-    url: '/assembly/create-assembly',
+    url: '/system/create-system',
     method: 'post',
     data
   })
@@ -20,9 +20,9 @@ export function createAssembly(data) {
 
 
 // 更新系统
-export function updateAssembly(data) {
+export function updateSystem(data) {
   return request({
-    url: '/assembly/update-assembly',
+    url: '/system/update-system',
     method: 'post',
     data
   })
@@ -30,9 +30,9 @@ export function updateAssembly(data) {
 
 
 // 删除系统
-export function deleteAssembly(id) {
+export function deleteSystem(id) {
   return request({
-    url: '/assembly/delete-assembly',
+    url: '/system/delete-system',
     method: 'get',
     params: { id }
   })
@@ -40,9 +40,9 @@ export function deleteAssembly(id) {
 
 
 // 查询系统
-export function queryAssembly(id) {
+export function querySystem(id) {
   return request({
-    url: '/assembly/query-assembly',
+    url: '/system/query-system',
     method: 'get',
     params: { id }
   })

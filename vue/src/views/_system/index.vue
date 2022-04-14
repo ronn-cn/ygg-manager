@@ -2,7 +2,7 @@
   <div class="app-container">
     <div class="filter-container">
       <!-- 新建系统按钮 -->
-      <el-button class="filter-item"  type="primary" @click="dialogNewAccountVisible = true"> 新建系统 </el-button> 
+      <el-button class="filter-item"  type="primary" @click="handleSystemClick('create', null)"> 新建系统 </el-button> 
       <el-input v-model="listQuery.title" placeholder="系统名称" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
       <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter"> 搜 索 </el-button>
     </div>
@@ -28,17 +28,22 @@
           <span>{{ row.ouid }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="依赖关系" min-width="110">
+      <el-table-column label="应用列表" min-width="110">
         <template slot-scope="{row}">
-          <span>{{ row.relation }}</span>
+          <span>{{ row.list }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="主应用" min-width="110">
+        <template slot-scope="{row}">
+          <span>{{ row.main }}</span>
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" sortable prop="created_at" :formatter="formatTime"></el-table-column>
       <el-table-column label="更新时间" align="center" sortable prop="updated_at" :formatter="formatTime"></el-table-column>
       <el-table-column label="操作" align="center" fixed="right" width="150" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('look',row)">查看</el-link>&nbsp;
-          <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('update',row)">编辑</el-link>&nbsp;
+          <el-link class="el-dropdown-link" type="primary" @click="handleSystemClick('look',row)">查看</el-link>&nbsp;
+          <el-link class="el-dropdown-link" type="primary" @click="handleSystemClick('update',row)">编辑</el-link>&nbsp;
           <el-dropdown>
             <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
             <el-dropdown-menu slot="dropdown">
@@ -55,142 +60,147 @@
 
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
 
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;">
-        <el-form-item label="Type" prop="type">
-          <el-select v-model="temp.type" class="filter-item" placeholder="Please select">
-            <el-option v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name" :value="item.key" />
+    <!-- 系统新建与编辑弹窗 -->
+    <el-dialog :title="dialogSystemFormTitle" :visible.sync="dialogSystemFormVisible" :close-on-click-modal="false">
+      <el-form ref="systemData" :model="systemData" label-position="left" label-width="70px">
+        <el-form-item label="OUID" prop="ouid">
+          <el-input v-model="systemData.ouid" placeholder="不填写，默认自动生成OUID" />
+        </el-form-item>
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="systemData.name" placeholder="请输入系统名称"/>
+        </el-form-item>
+        <el-form-item label="应用集合" prop="list">
+          <el-cascader
+            placeholder="试试搜索：**应用"
+            v-model="systemData.listarr"
+            :options="optionsAppData()"
+            :props="{ multiple: true }"
+            filterable
+            clearable
+            @change="systemDataListChange"
+            >
+          </el-cascader>
+        </el-form-item>
+        <el-form-item label="主应用" prop="main">
+          <el-select v-model="systemData.main" placeholder="请选择">
+            <el-option
+              v-for="item in systemData.mainOptionArr"
+              :key="item.label"
+              :label="item.label"
+              :value="item.value">
+            </el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="Date" prop="timestamp">
-          <el-date-picker v-model="temp.timestamp" type="datetime" placeholder="Please pick a date" />
-        </el-form-item>
-        <el-form-item label="Title" prop="title">
-          <el-input v-model="temp.title" />
-        </el-form-item>
-        <el-form-item label="Status">
-          <el-select v-model="temp.status" class="filter-item" placeholder="Please select">
-            <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="Imp">
-          <el-rate v-model="temp.importance" :colors="['#99A9BF', '#F7BA2A', '#FF9900']" :max="3" style="margin-top:8px;" />
-        </el-form-item>
-        <el-form-item label="Remark">
-          <el-input v-model="temp.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="Please input" />
+        <el-form-item label="备注">
+          <el-input v-model="systemData.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="Please input" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">
-          Cancel
+        <el-button @click="dialogSystemFormVisible = false">
+          取消
         </el-button>
-        <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()">
-          Confirm
+        <el-button type="primary" @click="dialogSystemFormStatus==='create'?createSystemData():updateSystemData()">
+          提交
         </el-button>
       </div>
     </el-dialog>
 
-    <el-dialog :visible.sync="dialogPvVisible" title="Reading statistics">
-      <el-table :data="pvData" border fit highlight-current-row style="width: 100%">
-        <el-table-column prop="key" label="Channel" />
-        <el-table-column prop="pv" label="Pv" />
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="dialogPvVisible = false">Confirm</el-button>
-      </span>
-    </el-dialog>
+    <!-- 系统查看弹窗 -->
   </div>
 </template>
 
 <script>
-import { getAssemblyList } from '@/api/assembly'
+import { mapGetters } from "vuex";
+import { getSystemList,createSystem } from '@/api/system'
+import { getApplicationList } from '@/api/application'
 import waves from '@/directive/waves' // waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
 
-const calendarTypeOptions = [
-  { key: 'CN', display_name: 'China' },
-  { key: 'US', display_name: 'USA' },
-  { key: 'JP', display_name: 'Japan' },
-  { key: 'EU', display_name: 'Eurozone' }
-]
-
-// arr to obj, such as { CN : "China", US : "USA" }
-const calendarTypeKeyValue = calendarTypeOptions.reduce((acc, cur) => {
-  acc[cur.key] = cur.display_name
-  return acc
-}, {})
-
 export default {
   name: 'ComplexTable',
   components: { Pagination },
-  directives: { waves },
-  filters: {
-    statusFilter(status) {
-      const statusMap = {
-        published: 'success',
-        draft: 'info',
-        deleted: 'danger'
-      }
-      return statusMap[status]
-    },
-    typeFilter(type) {
-      return calendarTypeKeyValue[type]
-    }
+  directives:
+   { waves },
+  filters: {},
+  computed: {
+    ...mapGetters(["info", "roles"]),
   },
   data() {
     return {
-      tableKey: 0,
-      list: null,
+      list: [],
+      appList: [],
       total: 0,
       listLoading: true,
       listQuery: {
         page: 1,
         limit: 20,
-        title: undefined,
+        name: undefined,
       },
-      importanceOptions: [1, 2, 3],
-      calendarTypeOptions,
-      sortOptions: [{ label: 'ID Ascending', key: '+id' }, { label: 'ID Descending', key: '-id' }],
-      statusOptions: ['published', 'draft', 'deleted'],
-      showReviewer: false,
-      temp: {
-        id: undefined,
-        importance: 1,
+      systemData: {
+        ouid: '',
+        name: '',
+        list: '',
+        listarr: [],
+        mainOptionArr:[],
+        main: '',
         remark: '',
-        timestamp: new Date(),
-        title: '',
-        type: '',
-        status: 'published'
+        status: 1,
       },
-      dialogFormVisible: false,
-      dialogStatus: '',
-      textMap: {
-        update: 'Edit',
-        create: 'Create'
-      },
-      dialogPvVisible: false,
-      pvData: [],
-      rules: {
-        type: [{ required: true, message: 'type is required', trigger: 'change' }],
-        timestamp: [{ type: 'date', required: true, message: 'timestamp is required', trigger: 'change' }],
-        title: [{ required: true, message: 'title is required', trigger: 'blur' }]
-      },
+      dialogSystemLookVisible: false,
+      dialogSystemFormVisible: false,
+      dialogSystemFormStatus: '',
+      dialogSystemFormTitle: '',
       downloadLoading: false
     }
   },
   created() {
     this.getList()
+    this.getAppList()
   },
   methods: {
     getList() {
       this.listLoading = true
-      getAssemblyList(this.listQuery).then(response => {
+      getSystemList(this.listQuery).then(response => {
         this.list = response.data.items
         this.total = response.data.total
 
         this.listLoading = false
       })
+    },
+    getAppList(){
+      getApplicationList().then(response => {
+        this.appList = response.data.items
+      })
+    },
+    optionsAppData(){
+      let appOptions = []
+      console.log(this.appList)
+      for (let i = 0; i < this.appList.length; i++){
+          let item = {
+            value: this.appList[i].appid,
+            label: this.appList[i].name+"["+this.appList[i].appid+"]",
+          }
+          appOptions.push(item)
+      }
+      return appOptions
+    },
+    // 系统的应用列表数据改变时操作的函数
+    systemDataListChange(){
+      this.systemData.mainOptionArr = []
+      this.systemData.list = this.systemData.listarr.toString()
+      for (var i = 0; i < this.appList.length; i++){
+        if(this.systemData.list.includes(this.appList[i].appid)){
+          let opt = {
+            label: this.appList[i].name,
+            value: this.appList[i].appid,
+          }
+          this.systemData.mainOptionArr.push(opt)
+        }
+      }
+      if(!this.systemData.list.includes(this.systemData.main)){
+        this.systemData.main = "";
+      }
     },
     tableRowClassName({row,rowIndex}){
       row.index = rowIndex;
@@ -200,76 +210,59 @@ export default {
       if(row[column.property] == 0){
         return "/"
       } else {
-        const date = new Date(row[column.property]*1000)
-        let y = date.getFullYear()
-        let mo = date.getMonth() + 1
-        if (mo < 10){ mo = '0' + mo }
-        let d = date.getDate()
-        if (d < 10){ d = '0' + d }
-        let h = date.getHours()
-        if (h < 10){ h = '0' + h }
-        let mi = date.getMinutes()
-        if (mi < 10){ mi = '0' + mi }
-        let s = date.getSeconds()
-        if (s < 10){ s = '0' + s }
-        return y + '-' + mo + '-' + d + ' ' + h + ':' + mi + ':' + s
+        return parseTime(row[column.property])
       }
     },
     handleFilter() {
       this.listQuery.page = 1
       this.getList()
     },
-    handleModifyStatus(row, status) {
-      this.$message({
-        message: '操作Success',
-        type: 'success'
-      })
-      row.status = status
-    },
-    sortChange(data) {
-      const { prop, order } = data
-      if (prop === 'id') {
-        this.sortByID(order)
-      }
-    },
-    sortByID(order) {
-      if (order === 'ascending') {
-        this.listQuery.sort = '+id'
-      } else {
-        this.listQuery.sort = '-id'
-      }
-      this.handleFilter()
-    },
-    resetTemp() {
-      this.temp = {
-        id: undefined,
-        importance: 1,
+    resetSystemData() {
+      this.systemData = {
+        ouid: '',
+        name: '',
+        list: '',
+        main: '',
         remark: '',
-        timestamp: new Date(),
-        title: '',
-        status: 'published',
-        type: ''
+        status: 1,
       }
     },
-    handleCreate() {
-      this.resetTemp()
-      this.dialogStatus = 'create'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
+    handleSystemClick(typ, data) {
+      switch(typ){
+        case 'create':
+          this.resetSystemData()
+          this.$nextTick(() => {
+            this.$refs['systemData'].clearValidate()
+          })
+          this.dialogSystemFormStatus = 'create'
+          this.dialogSystemFormTitle = "新建系统"
+          this.dialogSystemFormVisible = true
+          break;
+        case 'update':
+          this.dialogSystemFormStatus = 'update'
+          this.dialogSystemFormTitle = "编辑系统"
+          this.systemData = data
+          this.systemData.listarr = data.list.split(",")
+          this.dialogSystemFormVisible = true
+          break;
+        case 'look':
+          this.dialogSystemFormStatus = 'look'
+          this.dialogSystemFormTitle = "查看系统"
+          this.systemData = data
+          this.dialogSystemLookVisible = true
+          break;
+        default:
+          break;
+      }
     },
-    createData() {
-      this.$refs['dataForm'].validate((valid) => {
+    createSystemData() {
+      this.$refs['systemData'].validate((valid) => {
         if (valid) {
-          this.temp.id = parseInt(Math.random() * 100) + 1024 // mock a id
-          this.temp.author = 'vue-element-admin'
-          createArticle(this.temp).then(() => {
-            this.list.unshift(this.temp)
-            this.dialogFormVisible = false
-            this.$notify({
-              title: 'Success',
-              message: 'Created Successfully',
+          createSystem(this.systemData).then(() => {
+            this.getList()
+            this.dialogSystemFormVisible = false
+            this.$message({
+              message: '创建系统成功',
               type: 'success',
               duration: 2000
             })
@@ -277,7 +270,7 @@ export default {
         }
       })
     },
-    handleUpdate(row) {
+    handleSystemUpdate(row) {
       this.temp = Object.assign({}, row) // copy obj
       this.temp.timestamp = new Date(this.temp.timestamp)
       this.dialogStatus = 'update'

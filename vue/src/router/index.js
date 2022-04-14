@@ -132,13 +132,13 @@ export const asyncRoutes = [
     ]
   },
   {
-    path: '/assembly',
+    path: '/system',
     component: Layout,
     children: [
       {
-        path: 'assembly',
-        component: () => import('@/views/_assembly/index'),
-        name: 'assembly',
+        path: 'system',
+        component: () => import('@/views/_system/index'),
+        name: 'system',
         meta: { title: '系统管理', icon: 'tree-table', affix: true }
       }
     ]
