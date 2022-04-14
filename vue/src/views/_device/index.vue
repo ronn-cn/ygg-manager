@@ -120,7 +120,7 @@
 
     <!-- 设备查看弹窗 -->
     <el-dialog :visible.sync="dialogDeviceLookVisible" :title="dialogDeviceTitle">
-      <el-form label-position="left" :model="deviceData">
+      <el-form label-position="left" :model="deviceData" class="demo-table-expand">
         <el-form-item label="设备名称">
           <span>{{ deviceData.name }}</span>
         </el-form-item>
@@ -340,8 +340,6 @@ export default {
     createData() {
       this.$refs['deviceDataForm'].validate((valid) => {
         if (valid) {
-          // this.temp.id = parseInt(Math.random() * 100) + 1024 // mock a id
-          // this.temp.author = 'vue-element-admin'
           createDevice(this.deviceData).then(() => {
             this.list.unshift(this.deviceData)
             this.dialogDeviceFormVisible = false
@@ -421,5 +419,16 @@ export default {
 .el-dropdown-link {
   cursor: pointer;
   color: #409EFF;
+}
+
+.demo-table-expand {
+  font-size: 0;
+  .el-form-item {
+    margin-right: 0;
+    margin-bottom: 0;
+    label{
+      color: #99a9bf;
+    }
+  }
 }
 </style>

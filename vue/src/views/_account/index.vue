@@ -96,18 +96,20 @@
       width="30%"
       :before-close="closeChangePasswdForm"
     >
-      <el-input
-        v-model="passwd1"
-        class="passwd-input"
-        placeholder="请输入修改的密码"
-        show-password
-      />
-      <el-input
-        v-model="passwd2"
-        class="passwd-input"
-        placeholder="请输入刚才的密码"
-        show-password
-      />
+      <el-form>
+        <el-input
+          v-model="passwd1"
+          class="passwd-input"
+          placeholder="请输入修改的密码"
+          show-password
+        />
+        <el-input
+          v-model="passwd2"
+          class="passwd-input"
+          placeholder="请输入刚才的密码"
+          show-password
+        />
+      </el-form>
       <span slot="footer" class="dialog-footer">
         <el-button @click="closeChangePasswdForm">取 消</el-button>
         <el-button type="primary" @click="submiteChangePasswdForm(row)">确 定</el-button>

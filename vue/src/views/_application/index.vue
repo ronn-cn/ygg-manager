@@ -2,12 +2,12 @@
   <div class="app-container">
     <div class="filter-container">
       <!-- 新建应用按钮 -->
-      <el-button class="filter-item" type="primary" @click="dialogNewApplicationVisible = true"> 新建应用 </el-button> 
+      <el-button class="filter-item" type="primary" @click="handleApplicationClick('create', null)"> 新建应用 </el-button> 
 
       <el-input v-model="listQuery.name" placeholder="应用名称" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
       <el-input v-model="listQuery.appid" placeholder="APPID" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
       <el-select v-model="listQuery.type" placeholder="应用类型" clearable style="width: 120px" class="filter-item">
-        <!-- <el-option v-for="item in importanceOptions" :key="item" :label="item" :value="item" /> -->
+        <el-option v-for="item in appTypeOptions" :key="item.text" :label="item.text" :value="item.value" />
       </el-select>
       <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter"> 搜 索 </el-button>
     </div>
@@ -28,19 +28,19 @@
           <span>{{ row.name }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="APPID" min-width="150" align="center">
+      <el-table-column label="APPID" min-width="150" align="center" show-overflow-tooltip>
         <template slot-scope="{row}">
           <span>{{ row.appid }}</span>
         </template>
       </el-table-column>
       <el-table-column label="应用类型" min-width="110" align="center">
         <template slot-scope="{row}">
-          <span>{{ row.type }}</span>
+          <span>{{ getAppTypeText(row.type) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="最新版本" min-width="110" align="center">
         <template slot-scope="{row}">
-          <span style="color:red;">{{ row.latest }}</span>
+          <span style="color:red;">{{ row.latest==''?'无':row.latest }}</span>
         </template>
       </el-table-column>
 
@@ -48,16 +48,15 @@
 
       <el-table-column label="操作" align="center" fixed="right" width="150" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('look',row)">查看</el-link>&nbsp;
-          <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('update',row)">编辑</el-link>&nbsp;
+          <el-link class="el-dropdown-link" type="primary" @click="handleApplicationClick('look',row)">查看</el-link>&nbsp;
+          <el-link class="el-dropdown-link" type="primary" @click="handleApplicationClick('update',row)">编辑</el-link>&nbsp;
           <el-dropdown>
             <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item>修改密码</el-dropdown-item>
-              <el-dropdown-item>禁用/启用</el-dropdown-item>
-              <el-dropdown-item>删除</el-dropdown-item>
-              <el-dropdown-item>下载</el-dropdown-item>
-              <el-dropdown-item>更新</el-dropdown-item>
+              <el-dropdown-item>发布版本</el-dropdown-item>
+              <el-dropdown-item>设为正式/设为开发</el-dropdown-item>
+              <el-dropdown-item @click.native="deleteAppData(row.appid)">删除应用</el-dropdown-item>
+              <el-dropdown-item></el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </template>
@@ -66,131 +65,80 @@
 
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
 
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;">
-        <el-form-item label="Type" prop="type">
-          <el-select v-model="temp.type" class="filter-item" placeholder="Please select">
-            <el-option v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name" :value="item.key" />
+    <!-- 添加编辑应用弹窗 -->
+    <el-dialog :title="dialogApplicationFormTitle" :visible.sync="dialogApplicationFormVisible">
+      <el-form ref="appData" :model="appData" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;">
+        <el-form-item label="Appid" prop="appid">
+          <el-input v-model="appData.appid" placeholder="不填写，默认自动生成Appid"/>
+        </el-form-item>
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="appData.name" placeholder="请填写应用名称"/>
+        </el-form-item>
+        <el-form-item label="类型" prop="type">
+          <el-select v-model="appData.type" class="filter-item" placeholder="Please select">
+            <el-option v-for="item in appTypeOptions" :key="item.text" :label="item.text" :value="item.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Date" prop="timestamp">
-          <el-date-picker v-model="temp.timestamp" type="datetime" placeholder="Please pick a date" />
+        <el-form-item v-if="info.type_id == 3">
+          <el-checkbox v-model="appData.status">发布为正式应用</el-checkbox>
         </el-form-item>
-        <el-form-item label="Title" prop="title">
-          <el-input v-model="temp.title" />
-        </el-form-item>
-        <el-form-item label="Status">
-          <el-select v-model="temp.status" class="filter-item" placeholder="Please select">
-            <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="Imp">
-          <el-rate v-model="temp.importance" :colors="['#99A9BF', '#F7BA2A', '#FF9900']" :max="3" style="margin-top:8px;" />
-        </el-form-item>
-        <el-form-item label="Remark">
-          <el-input v-model="temp.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="Please input" />
+        <el-form-item label="备注">
+          <el-input v-model="appData.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="请填写备注信息" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">
-          Cancel
-        </el-button>
-        <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()">
-          Confirm
-        </el-button>
+        <el-button @click="dialogApplicationFormVisible = false"> 取消 </el-button>
+        <el-button type="primary" @click="dialogApplicationFormStatus==='create'?createAppData():updateAppData()"> 提交 </el-button>
       </div>
-    </el-dialog>
-
-    <el-dialog :visible.sync="dialogPvVisible" title="Reading statistics">
-      <el-table :data="pvData" border fit highlight-current-row style="width: 100%">
-        <el-table-column prop="key" label="Channel" />
-        <el-table-column prop="pv" label="Pv" />
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="dialogPvVisible = false">Confirm</el-button>
-      </span>
     </el-dialog>
   </div>
 </template>
 
 <script>
-import { getApplicationList } from '@/api/application'
+import { mapGetters } from "vuex";
+import { getApplicationList, createApplication, updateApplication, deleteApplication } from '@/api/application'
 import waves from '@/directive/waves' // waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
-
-const calendarTypeOptions = [
-  { key: 'CN', display_name: 'China' },
-  { key: 'US', display_name: 'USA' },
-  { key: 'JP', display_name: 'Japan' },
-  { key: 'EU', display_name: 'Eurozone' }
-]
-
-// arr to obj, such as { CN : "China", US : "USA" }
-const calendarTypeKeyValue = calendarTypeOptions.reduce((acc, cur) => {
-  acc[cur.key] = cur.display_name
-  return acc
-}, {})
 
 export default {
   name: 'ComplexTable',
   components: { Pagination },
   directives: { waves },
-  filters: {
-    statusFilter(status) {
-      const statusMap = {
-        published: 'success',
-        draft: 'info',
-        deleted: 'danger'
-      }
-      return statusMap[status]
-    },
-    typeFilter(type) {
-      return calendarTypeKeyValue[type]
-    }
+  filters: { },
+  computed: {
+    ...mapGetters(["info", "roles"]),
   },
   data() {
     return {
-      tableKey: 0,
       list: null,
       total: 0,
       listLoading: true,
       listQuery: {
         page: 1,
         limit: 20,
-        importance: undefined,
-        title: undefined,
+        name: undefined,
+        appid: undefined,
         type: undefined,
-        sort: '+id'
       },
-      importanceOptions: [1, 2, 3],
-      calendarTypeOptions,
-      sortOptions: [{ label: 'ID Ascending', key: '+id' }, { label: 'ID Descending', key: '-id' }],
-      statusOptions: ['published', 'draft', 'deleted'],
-      showReviewer: false,
-      temp: {
-        id: undefined,
-        importance: 1,
-        remark: '',
-        timestamp: new Date(),
-        title: '',
-        type: '',
-        status: 'published'
+      // 应用类型选项
+      appTypeOptions: [
+        { value: 0, text: '程序' },
+        { value: 1, text: '视图' },
+        { value: 2, text: '资源' },
+        { value: 3, text: '服务' },
+      ],
+      appData: {
+        appid: '',
+        name: '',
+        type: 0,
+        latest: '',
+        status: 1,
       },
-      dialogFormVisible: false,
-      dialogStatus: '',
-      textMap: {
-        update: 'Edit',
-        create: 'Create'
-      },
-      dialogPvVisible: false,
-      pvData: [],
-      rules: {
-        type: [{ required: true, message: 'type is required', trigger: 'change' }],
-        timestamp: [{ type: 'date', required: true, message: 'timestamp is required', trigger: 'change' }],
-        title: [{ required: true, message: 'title is required', trigger: 'blur' }]
-      },
-      downloadLoading: false
+      dialogApplicationFormStatus: '',      // 应用表单弹窗状态
+      dialogApplicationFormTitle: '',       // 应用表单弹窗标题
+      dialogApplicationFormVisible: false,  // 应用添加/编辑弹窗标识
+      dialogApplicationLookVisible: false,  // 应用查看弹窗标识  
     }
   },
   created() {
@@ -209,61 +157,82 @@ export default {
     tableRowClassName({row,rowIndex}){
       row.index = rowIndex;
     },
+    // 格式化时间
+    formatTime(row, column) {
+      if(row[column.property] == 0){
+        return "/"
+      } else {
+        const date = new Date(row[column.property]*1000)
+        let y = date.getFullYear()
+        let mo = date.getMonth() + 1
+        if (mo < 10){ mo = '0' + mo }
+        let d = date.getDate()
+        if (d < 10){ d = '0' + d }
+        let h = date.getHours()
+        if (h < 10){ h = '0' + h }
+        let mi = date.getMinutes()
+        if (mi < 10){ mi = '0' + mi }
+        let s = date.getSeconds()
+        if (s < 10){ s = '0' + s }
+        return y + '-' + mo + '-' + d + ' ' + h + ':' + mi + ':' + s
+      }
+    },
+    getAppTypeText(typ){
+      for (let i = 0; i < this.appTypeOptions.length; i++){
+        if (this.appTypeOptions[i].value == typ){
+          return this.appTypeOptions[i].text;
+        }
+      }
+    },
     handleFilter() {
       this.listQuery.page = 1
       this.getList()
     },
-    handleModifyStatus(row, status) {
-      this.$message({
-        message: '操作Success',
-        type: 'success'
-      })
-      row.status = status
-    },
-    sortChange(data) {
-      const { prop, order } = data
-      if (prop === 'id') {
-        this.sortByID(order)
+    resetAppData() {
+      this.appData = {
+        appid: '',
+        name: '',
+        type: 0,
+        latest: '',
+        status: 1,
       }
     },
-    sortByID(order) {
-      if (order === 'ascending') {
-        this.listQuery.sort = '+id'
-      } else {
-        this.listQuery.sort = '-id'
+    // 处理应用管理的点击
+    handleApplicationClick(typ,data){
+      switch(typ){
+        case 'create':
+          this.resetAppData()
+          this.$nextTick(() => {
+            this.$refs['appData'].clearValidate()
+          })
+          this.dialogApplicationFormStatus = 'create'
+          this.dialogApplicationFormTitle = "新建应用"
+          this.dialogApplicationFormVisible = true
+          break;
+        case 'update':
+          this.dialogApplicationFormStatus = 'update'
+          this.dialogApplicationFormTitle = "编辑应用"
+          this.appData = data
+          this.dialogApplicationFormVisible = true
+          break;
+        case 'look':
+          this.dialogApplicationFormStatus = 'look'
+          this.dialogApplicationFormTitle = "查看应用"
+          this.appData = data
+          this.dialogApplicationLookVisible = true
+          break;
+        default:
+          break;
       }
-      this.handleFilter()
     },
-    resetTemp() {
-      this.temp = {
-        id: undefined,
-        importance: 1,
-        remark: '',
-        timestamp: new Date(),
-        title: '',
-        status: 'published',
-        type: ''
-      }
-    },
-    handleCreate() {
-      this.resetTemp()
-      this.dialogStatus = 'create'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
-    },
-    createData() {
-      this.$refs['dataForm'].validate((valid) => {
+    createAppData() {
+      this.$refs['appData'].validate((valid) => {
         if (valid) {
-          this.temp.id = parseInt(Math.random() * 100) + 1024 // mock a id
-          this.temp.author = 'vue-element-admin'
-          createArticle(this.temp).then(() => {
-            this.list.unshift(this.temp)
-            this.dialogFormVisible = false
-            this.$notify({
-              title: 'Success',
-              message: 'Created Successfully',
+          createApplication(this.appData).then(() => {
+            this.getList()
+            this.dialogApplicationFormVisible = false
+            this.$message({
+              message: '新建应用成功',
               type: 'success',
               duration: 2000
             })
@@ -271,27 +240,15 @@ export default {
         }
       })
     },
-    handleUpdate(row) {
-      this.temp = Object.assign({}, row) // copy obj
-      this.temp.timestamp = new Date(this.temp.timestamp)
-      this.dialogStatus = 'update'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
-    },
-    updateData() {
-      this.$refs['dataForm'].validate((valid) => {
+    updateAppData() {
+      this.$refs['appData'].validate((valid) => {
         if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
-          updateArticle(tempData).then(() => {
-            const index = this.list.findIndex(v => v.id === this.temp.id)
-            this.list.splice(index, 1, this.temp)
-            this.dialogFormVisible = false
-            this.$notify({
-              title: 'Success',
-              message: 'Update Successfully',
+          const tempData = Object.assign({}, this.appData)
+          updateApplication(tempData).then(() => {
+            this.getList()
+            this.dialogApplicationFormVisible = false
+            this.$message({
+              message: '更新应用成功',
               type: 'success',
               duration: 2000
             })
@@ -299,47 +256,32 @@ export default {
         }
       })
     },
-    handleDelete(row, index) {
-      this.$notify({
-        title: 'Success',
-        message: 'Delete Successfully',
-        type: 'success',
-        duration: 2000
-      })
-      this.list.splice(index, 1)
+    deleteAppData(appid){
+      console.log("要删除的appid:",appid)
+      this.$confirm('此操作将永久删除该应用, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        deleteApplication(appid).then(() => {
+            this.getList()
+            this.$message({
+              type: 'success',
+              message: '删除应用成功!'
+            });
+          });
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除应用'
+        });          
+      });
     },
     handleFetchPv(pv) {
       fetchPv(pv).then(response => {
         this.pvData = response.data.pvData
         this.dialogPvVisible = true
       })
-    },
-    handleDownload() {
-      this.downloadLoading = true
-      import('@/vendor/Export2Excel').then(excel => {
-        const tHeader = ['timestamp', 'title', 'type', 'importance', 'status']
-        const filterVal = ['timestamp', 'title', 'type', 'importance', 'status']
-        const data = this.formatJson(filterVal)
-        excel.export_json_to_excel({
-          header: tHeader,
-          data,
-          filename: 'table-list'
-        })
-        this.downloadLoading = false
-      })
-    },
-    formatJson(filterVal) {
-      return this.list.map(v => filterVal.map(j => {
-        if (j === 'timestamp') {
-          return parseTime(v[j])
-        } else {
-          return v[j]
-        }
-      }))
-    },
-    getSortClass: function(key) {
-      const sort = this.listQuery.sort
-      return sort === `+${key}` ? 'ascending' : 'descending'
     }
   }
 }

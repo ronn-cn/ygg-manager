@@ -23,7 +23,7 @@ export function createApplication(data) {
 export function updateApplication(data) {
   return request({
     url: '/application/update-application',
-    method: 'post',
+    method: 'put',
     data
   })
 }
@@ -33,8 +33,8 @@ export function updateApplication(data) {
 export function deleteApplication(id) {
   return request({
     url: '/application/delete-application',
-    method: 'get',
-    params: { id }
+    method: 'delete',
+    params: { appid: id }
   })
 }
 
@@ -44,6 +44,6 @@ export function queryApplication(id) {
   return request({
     url: '/application/query-application',
     method: 'get',
-    params: { id }
+    params: { appid: id }
   })
 }
