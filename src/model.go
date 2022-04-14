@@ -157,12 +157,14 @@ func (Company) TableName() string {
 
 type Application struct {
 	Model
-	Appid          string  `json:"appid" gorm:"column:appid;primaryKey;NOT NULL"`                  // 应用ID
-	Name           string  `json:"name" gorm:"column:name"`                                        // 应用名称
-	Type           int     `json:"type" gorm:"column:type"`                                        // 应用类型
-	Latest         string  `json:"latest" gorm:"column:latest"`                                    // 应用最新版本
-	CreatorAccount Account `json:"creator" gorm:"ForeignKey:CreatorID;AssociationForeignKey:OUID"` // 创建者
-	CreatorID      string  `json:"creator_id" gorm:"column:creator"`                               // 创建者ID
+	Appid          string   `json:"appid" gorm:"column:appid;primaryKey;NOT NULL"`                  // 应用ID
+	Name           string   `json:"name" gorm:"column:name"`                                        // 应用名称
+	Type           int      `json:"type" gorm:"column:type"`                                        // 应用类型
+	Latest         string   `json:"latest" gorm:"column:latest"`                                    // 应用最新版本
+	CreatorAccount *Account `json:"creator" gorm:"ForeignKey:CreatorID;AssociationForeignKey:OUID"` // 创建者
+	CreatorID      *string  `json:"creator_id" gorm:"column:creator"`                               // 创建者ID
+	Status         int      `json:"status" gorm:"column:status"`                                    // 应用的状态，正式应用，开发应用
+	Remark         string   `json:"remark" gorm:"column:remark"`                                    // 备注信息
 }
 
 func (Application) TableName() string {
