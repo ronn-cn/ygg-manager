@@ -3,7 +3,7 @@
     <div class="filter-container">
       <!-- 新建系统按钮 -->
       <el-button class="filter-item"  type="primary" @click="handleSystemClick('create', null)"> 新建系统 </el-button> 
-      <el-input v-model="listQuery.title" placeholder="系统名称" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
+      <el-input v-model="listQuery.name" placeholder="系统名称" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
       <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter"> 搜 索 </el-button>
     </div>
     <el-table
@@ -28,17 +28,21 @@
           <span>{{ row.ouid }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="应用列表" min-width="110">
+      <!-- type="expand" -->
+      <el-table-column label="应用列表" min-width="110">  
         <template slot-scope="{row}">
-          <span>{{ row.list }}</span>
+          <!-- <span>{{ row.list }}</span> -->
+          <div v-for="app in row.listarr" :key="app">
+            <el-tag style="margin:2px 0" size="small" v-if="app!=''">{{app}}</el-tag>
+          </div>
         </template>
       </el-table-column>
-      <el-table-column label="主应用" min-width="110">
+      <!-- <el-table-column label="主应用" min-width="110">
         <template slot-scope="{row}">
           <span>{{ row.main }}</span>
         </template>
-      </el-table-column>
-      <el-table-column label="创建时间" align="center" sortable prop="created_at" :formatter="formatTime"></el-table-column>
+      </el-table-column> -->
+      <!-- <el-table-column label="创建时间" align="center" sortable prop="created_at" :formatter="formatTime"></el-table-column> -->
       <el-table-column label="更新时间" align="center" sortable prop="updated_at" :formatter="formatTime"></el-table-column>
       <el-table-column label="操作" align="center" fixed="right" width="150" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
@@ -47,11 +51,9 @@
           <el-dropdown>
             <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item>修改密码</el-dropdown-item>
-              <el-dropdown-item>禁用/启用</el-dropdown-item>
-              <el-dropdown-item>删除</el-dropdown-item>
-              <el-dropdown-item>下载</el-dropdown-item>
-              <el-dropdown-item>更新</el-dropdown-item>
+              <el-dropdown-item>推送更新</el-dropdown-item>
+              <el-dropdown-item>设为开发</el-dropdown-item>
+              <el-dropdown-item>删除系统</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </template>
@@ -92,7 +94,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="systemData.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="Please input" />
+          <el-input v-model="systemData.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="请填写备注信息" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -106,6 +108,58 @@
     </el-dialog>
 
     <!-- 系统查看弹窗 -->
+    <el-dialog :title="dialogSystemFormTitle" :visible.sync="dialogSystemLookVisible">
+      <el-descriptions class="margin-top" :column="3" border>
+        <el-descriptions-item>
+          <template slot="label">
+            系统名称
+          </template>
+          {{ systemData.name }}
+        </el-descriptions-item>
+        <el-descriptions-item span="2">
+          <template slot="label">
+            OUID
+          </template>
+          {{ systemData.ouid }}
+        </el-descriptions-item>
+        <el-descriptions-item>
+          <template slot="label">
+            状态
+          </template>
+          {{ systemData.status?'正式':'开发' }}
+        </el-descriptions-item>
+        
+        <el-descriptions-item>
+          <template slot="label">
+            创建时间
+          </template>
+          {{ parseTime(systemData.created_at) }}
+        </el-descriptions-item>
+        
+        <el-descriptions-item>
+          <template slot="label">
+            更新时间
+          </template>
+          {{ parseTime(systemData.updated_at) }}
+        </el-descriptions-item>
+        <el-descriptions-item span="3" label="备注">
+          {{ systemData.remark }}
+        </el-descriptions-item>
+        
+        <el-descriptions-item span="3" label="应用列表">
+          <el-table :data="systemData.applist" style="width: 100%">
+            <el-table-column prop="name" label="应用名称"> </el-table-column>
+            <el-table-column prop="appid" label="应用ID" show-overflow-tooltip> </el-table-column>
+            <el-table-column prop="latest" label="最新版本"> </el-table-column>
+            <el-table-column label="主应用标记" align="center">
+              <template slot-scope="{row}">
+                <el-button v-if="row.main" type="danger" size="mini" icon="el-icon-check" circle></el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 
@@ -142,6 +196,7 @@ export default {
         name: '',
         list: '',
         listarr: [],
+        applist: [],
         mainOptionArr:[],
         main: '',
         remark: '',
@@ -183,12 +238,21 @@ export default {
           }
           appOptions.push(item)
       }
+      // this.systemDataListChange()
       return appOptions
     },
     // 系统的应用列表数据改变时操作的函数
     systemDataListChange(){
-      this.systemData.mainOptionArr = []
+      console.log("systemDataListChange:",this.systemData.mainOptionArr)
+      if(this.systemData.mainOptionArr){
+        this.systemData.mainOptionArr.length = 0;
+      } else {
+        this.systemData.mainOptionArr = [];
+      }
       this.systemData.list = this.systemData.listarr.toString()
+      if(!this.systemData.list.includes(this.systemData.main)){
+        this.systemData.main = "";
+      }
       for (var i = 0; i < this.appList.length; i++){
         if(this.systemData.list.includes(this.appList[i].appid)){
           let opt = {
@@ -198,12 +262,10 @@ export default {
           this.systemData.mainOptionArr.push(opt)
         }
       }
-      if(!this.systemData.list.includes(this.systemData.main)){
-        this.systemData.main = "";
-      }
     },
     tableRowClassName({row,rowIndex}){
       row.index = rowIndex;
+      row.listarr =  row.list.split(",");
     },
     // 格式化时间
     formatTime(row, column) {
@@ -212,6 +274,9 @@ export default {
       } else {
         return parseTime(row[column.property])
       }
+    },
+    parseTime(time){
+      return parseTime(time)
     },
     handleFilter() {
       this.listQuery.page = 1
@@ -222,6 +287,9 @@ export default {
         ouid: '',
         name: '',
         list: '',
+        listarr: [],
+        applist: [],
+        mainOptionArr:[],
         main: '',
         remark: '',
         status: 1,
@@ -241,14 +309,31 @@ export default {
         case 'update':
           this.dialogSystemFormStatus = 'update'
           this.dialogSystemFormTitle = "编辑系统"
-          this.systemData = data
+          this.systemData.ouid = data.ouid
+          this.systemData.name = data.name
+          this.systemData.list = data.list
+          this.systemData.main = data.main
+          this.systemData.remark = data.remark
           this.systemData.listarr = data.list.split(",")
+          this.systemDataListChange()
           this.dialogSystemFormVisible = true
           break;
         case 'look':
           this.dialogSystemFormStatus = 'look'
           this.dialogSystemFormTitle = "查看系统"
           this.systemData = data
+          this.systemData.applist = [];
+          // 查询应用列表 
+          for (let i = 0; i < this.appList.length; i++){
+            this.appList[i].main = false
+            if (this.systemData.list.includes(this.appList[i].appid)){
+              let item = this.appList[i]
+              if (this.appList[i].appid == this.systemData.main){
+                item.main = true
+              }
+              this.systemData.applist.push(item)
+            }
+          }
           this.dialogSystemLookVisible = true
           break;
         default:
@@ -270,75 +355,21 @@ export default {
         }
       })
     },
-    handleSystemUpdate(row) {
-      this.temp = Object.assign({}, row) // copy obj
-      this.temp.timestamp = new Date(this.temp.timestamp)
-      this.dialogStatus = 'update'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
-    },
-    updateData() {
+    updateSystemData() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
-          updateArticle(tempData).then(() => {
-            const index = this.list.findIndex(v => v.id === this.temp.id)
-            this.list.splice(index, 1, this.temp)
-            this.dialogFormVisible = false
-            this.$notify({
-              title: 'Success',
-              message: 'Update Successfully',
+          const tempData = Object.assign({}, this.systemData)
+          updateSystem(tempData).then(() => {
+            this.getList()
+            this.dialogSystemFormVisible = false
+            this.$message({
+              message: '更新系统成功',
               type: 'success',
               duration: 2000
             })
           })
         }
       })
-    },
-    handleDelete(row, index) {
-      this.$notify({
-        title: 'Success',
-        message: 'Delete Successfully',
-        type: 'success',
-        duration: 2000
-      })
-      this.list.splice(index, 1)
-    },
-    handleFetchPv(pv) {
-      fetchPv(pv).then(response => {
-        this.pvData = response.data.pvData
-        this.dialogPvVisible = true
-      })
-    },
-    handleDownload() {
-      this.downloadLoading = true
-      import('@/vendor/Export2Excel').then(excel => {
-        const tHeader = ['timestamp', 'title', 'type', 'importance', 'status']
-        const filterVal = ['timestamp', 'title', 'type', 'importance', 'status']
-        const data = this.formatJson(filterVal)
-        excel.export_json_to_excel({
-          header: tHeader,
-          data,
-          filename: 'table-list'
-        })
-        this.downloadLoading = false
-      })
-    },
-    formatJson(filterVal) {
-      return this.list.map(v => filterVal.map(j => {
-        if (j === 'timestamp') {
-          return parseTime(v[j])
-        } else {
-          return v[j]
-        }
-      }))
-    },
-    getSortClass: function(key) {
-      const sort = this.listQuery.sort
-      return sort === `+${key}` ? 'ascending' : 'descending'
     }
   }
 }

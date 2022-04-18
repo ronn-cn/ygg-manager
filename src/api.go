@@ -74,6 +74,38 @@ func handleManagerApi(c *gin.Context) {
 	}
 }
 
+// 处理仪表板请求
+func handleDashboard(c *gin.Context, ps []string) {
+	if len(ps) < 1 {
+		c.Status(404)
+		return
+	}
+	switch ps[1] {
+	case "get-data":
+		reData := make(map[string]interface{})
+		reData["device_count"] = 10
+		reData["assembly_count"] = 11
+		reData["application_count"] = 12
+		reData["customer_count"] = 6
+		reData["dealer_count"] = 5
+		reData["facturer_count"] = 5
+		reData["today_device_add"] = 5
+		reData["today_assembly_add"] = 5
+		reData["today_application_add"] = 5
+		reData["today_device_produced"] = 5
+		reData["today_device_sold"] = 5
+		reData["today_device_installed"] = 5
+		reData["account_count"] = 5
+		reData["record_count"] = 5
+		reData["today_record_add"] = 5
+		reData["version_count"] = 5
+		reData["today_version_add"] = 5
+		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": reData})
+	default:
+		c.Status(404)
+	}
+}
+
 func handleLicense(c *gin.Context, ps []string) {
 	if len(ps) < 1 {
 		c.Status(404)

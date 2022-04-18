@@ -7,8 +7,8 @@
       <el-select v-model="listQuery.status" placeholder="状态" clearable style="width: 90px" class="filter-item">
         <el-option v-for="item in statusOptions" :key="item.value" :label="item.text" :value="item.value" />
       </el-select>
-      <el-select v-model="listQuery.assembly" placeholder="系统" clearable class="filter-item" style="width: 130px">
-        <!-- <el-option v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name+'('+item.key+')'" :value="item.key" /> -->
+      <el-select v-model="listQuery.system" placeholder="系统" clearable class="filter-item" style="width: 130px">
+        <el-option v-for="item in systemOptions" :key="item.text" :label="item.text" :value="item.value" />
       </el-select>
       <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter"> 搜 索 </el-button>
     </div>
@@ -44,28 +44,20 @@
       :filters="statusOptions"
       :filter-method="filterStatus">
         <template slot-scope="{row}">
-          <span>{{ row.status.name }}</span>
+          <!-- <span>{{ row.status?row.status.name:"" }}</span> -->
         </template>
       </el-table-column>
       <el-table-column
        label="系统" 
        min-width="120" 
-      :filters="[{ text: '家', value: '家' }, { text: '公司', value: '公司' }]"
-      :filter-method="filterAssembly">
+      :filters="systemOptions"
+      :filter-method="filterSystem">
         <template slot-scope="{row}">
-          <span>{{ row.assembly.name }}</span>
+          <!-- <span>{{ row.system?row.system.name:"" }}</span> -->
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" sortable prop="created_at" :formatter="formatTime">
-        <!-- <template slot-scope="{row}">
-          <span>{{ row.created_at }}</span>
-        </template> -->
-      </el-table-column>
-      <el-table-column label="最后在线时间" class-name="status-col" sortable prop="last_time" :formatter="formatTime">
-        <!-- <template slot-scope="{row}">
-          <span>{{ row.last_time }}</span>
-        </template> -->
-      </el-table-column>
+      <el-table-column label="创建时间" align="center" sortable prop="created_at" :formatter="formatTime"></el-table-column>
+      <el-table-column label="最后在线时间" class-name="status-col" sortable prop="last_time" :formatter="formatTime"></el-table-column>
       <el-table-column label="操作" align="center" fixed="right" width="150" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
           <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('look',row)">查看</el-link>&nbsp;
@@ -88,7 +80,7 @@
 
       <!-- 新建设备弹窗 -->
     <el-dialog :title="dialogDeviceTitle" :visible.sync="dialogDeviceFormVisible">
-      <el-form ref="deviceDataForm" :model="deviceData" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;">
+      <el-form ref="deviceData" :model="deviceData" label-position="left" label-width="100px">
         <el-form-item label="设备OUID">
           <el-input v-model="deviceData.ouid" placeholder="不填写，默认自动生成OUID" />
         </el-form-item>
@@ -99,13 +91,13 @@
           <el-input v-model="deviceData.pin" placeholder="不填写，默认自动生成6位PIN码"/>
         </el-form-item>
         <el-form-item label="设备系统">
-          <el-select v-model="deviceData.assembly" class="filter-item" placeholder="Please select">
-            <!-- <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item" /> -->
+          <el-select v-model="deviceData.system_ouid" class="filter-item" placeholder="请选择设备系统">
+            <el-option v-for="item in systemOptions" :key="item.text" :label="item.text" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="设备状态">
-          <el-select v-model="deviceData.status" class="filter-item" placeholder="Please select">
-            <!-- <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item" /> -->
+          <el-select v-model="deviceData.status_id" class="filter-item" placeholder="请选择设备状态">
+            <el-option v-for="item in statusOptions" :key="item.text" :label="item.text" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="备注">
@@ -114,7 +106,7 @@
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogDeviceFormVisible = false"> 取消 </el-button>
-        <el-button type="primary" @click="dialogDeviceStatus==='create'?createData():updateData()"> 确认 </el-button>
+        <el-button type="primary" @click="dialogDeviceStatus==='create'?createDeviceData():updateDeviceData()"> 确认 </el-button>
       </div>
     </el-dialog>
 
@@ -131,10 +123,10 @@
           <span>{{ deviceData.pin }}</span>
         </el-form-item>
         <el-form-item label="设备系统">
-          <span>{{ deviceData.assembly.name }}</span>
+          <!-- <span>{{ deviceData.system.name }}</span> -->
         </el-form-item>
         <el-form-item label="设备状态">
-          <span>{{ deviceData.status.name }}</span>
+          <!-- <span>{{ deviceData.status.name }}</span> -->
         </el-form-item>
         <el-form-item label="授权注册码">
           <span v-if = "deviceData.license != undefined">{{ deviceData.license.code }}</span>
@@ -150,6 +142,7 @@
 
 <script>
 import { getDeviceList, createDevice, updateDevice } from '@/api/device'
+import { getSystemList,createSystem } from '@/api/system'
 import waves from '@/directive/waves' // waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
@@ -170,8 +163,9 @@ export default {
         name: undefined,
         ouid: undefined,
         status: undefined,
-        assembly: undefined
+        system: undefined
       },
+      // TODO：修改为api获取
       statusOptions: [{
         value: 1,
         text: '注册'
@@ -212,18 +206,17 @@ export default {
         value: 13,
         text: '开发'
       }],
-      assemblyOptions: [],  //动态获取
+      systemOptions: [],  //动态获取
       dialogDeviceLookVisible: false,
       dialogDeviceFormVisible: false,
       dialogDeviceStatus: '',
       dialogDeviceTitle: '',
       deviceData: {
-        id: 0,
         name: '',
         ouid: '',
         pin: '',
-        assembly: '',
-        status: 0,
+        system_ouid: '',
+        status_id: 13,
         license: undefined,
         product_json: undefined,
         install_json: undefined,
@@ -239,15 +232,29 @@ export default {
   },
   created() {
     this.getList()
+    this.getSystemList()
   },
   methods: {
     getList() {
       this.listLoading = true
       getDeviceList(this.listQuery).then(response => {
+        console.log("ssss：",response.data)
         this.list = response.data.items
         this.total = response.data.total
         
         this.listLoading = false
+      })
+    },
+    getSystemList(){
+      getSystemList().then(response => {
+        console.log("response.data.items:",response.data.items)
+        for (let i = 0; i < response.data.items.length; i++){
+          let opt = {
+            value: response.data.items[i].ouid,
+            text: response.data.items[i].name,
+          }
+          this.systemOptions.push(opt)
+        }
       })
     },
     tableRowClassName({row,rowIndex}){
@@ -277,8 +284,12 @@ export default {
     filterStatus(value, row) {
       return row.status_id === value;
     },
-    filterAssembly(value, row) {
-      return row.assembly.name === value;
+    filterSystem(value, row) {
+      if (row.system){
+        return row.system.name === value;
+      } else {
+        return ""
+      }
     },
     // 显示密码
     handleViewClick(row){
@@ -294,7 +305,7 @@ export default {
         case 'create':
           this.resetDeviceData()
           this.$nextTick(() => {
-            this.$refs['deviceDataForm'].clearValidate()
+            this.$refs['deviceData'].clearValidate()
           })
           this.dialogDeviceStatus = 'create'
           this.dialogDeviceTitle = "新建设备"
@@ -319,12 +330,11 @@ export default {
     // 重置设备数据
     resetDeviceData() {
       this.deviceData = {
-        id: 0,
         name: '',
         ouid: '',
         pin: '',
-        assembly: '',
-        status: 0,
+        system_ouid: '',
+        status_id: 13,
         license: undefined,
         product_json: undefined,
         install_json: undefined,
@@ -337,14 +347,13 @@ export default {
       }
     },
     // 处理新建设备提交
-    createData() {
-      this.$refs['deviceDataForm'].validate((valid) => {
+    createDeviceData() {
+      this.$refs['deviceData'].validate((valid) => {
         if (valid) {
           createDevice(this.deviceData).then(() => {
-            this.list.unshift(this.deviceData)
+            this.getList()
             this.dialogDeviceFormVisible = false
-            this.$notify({
-              title: '请求成功',
+            this.$message({
               message: '创建设备成功',
               type: 'success',
               duration: 2000
@@ -354,17 +363,14 @@ export default {
       })
     },
     // 处理更新设备提交
-    updateData() {
+    updateDeviceData() {
       this.$refs['deviceDataForm'].validate((valid) => {
         if (valid) {
           const tempData = Object.assign({}, this.deviceData)
-          // tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
           updateDevice(tempData).then(() => {
-            const index = this.list.findIndex(v => v.id === this.temp.id)
-            this.list.splice(index, 1, this.deviceData)
+            this.getList()
             this.dialogDeviceFormVisible = false
-            this.$notify({
-              title: '请求成功',
+            this.$message({
               message: '更新设备成功',
               type: 'success',
               duration: 2000

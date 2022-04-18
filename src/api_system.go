@@ -5,6 +5,7 @@ import (
 	"libs/ouid"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func handleSystem(c *gin.Context, ps []string) {
@@ -15,6 +16,8 @@ func handleSystem(c *gin.Context, ps []string) {
 	switch ps[1] {
 	case "get-system-list":
 		getSystemList(c)
+	case "query-system":
+		querySystem(c)
 	case "create-system":
 		createSystem(c)
 	default:
@@ -29,9 +32,44 @@ func getSystemList(c *gin.Context) {
 		c.Status(405)
 		return
 	}
-	var systems []System
-	PGDB.Order("id").Find(&systems)
-	c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(systems), "items": systems}})
+	if account, err := VerifyToken(c); err == nil {
+		logger.Debugf("请求的账号信息:%v", account)
+		namestr := c.Query("name")
+		var systems []System
+
+		var tx *gorm.DB = PGDB
+		if namestr != "" {
+			tx = PGDB.Where("name LIKE ?", "%"+namestr+"%")
+		}
+		if result := tx.Order("id").Find(&systems); result.Error == nil {
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(systems), "items": systems}})
+		} else {
+			c.JSON(200, gin.H{"errcode": 10200, "errmsg": "查询数据错误"})
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+	}
+}
+
+// 查询系统
+func querySystem(c *gin.Context) {
+	if c.Request.Method != "GET" {
+		c.Status(405)
+		return
+	}
+	if account, err := VerifyToken(c); err == nil {
+		logger.Debugf("请求的账号信息:%v", account)
+		ouidstr := c.Query("ouid")
+
+		var system System
+		if result := PGDB.Where("ouid = ?", ouidstr).Find(&system); result.Error == nil {
+			// c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(systems), "items": systems}})
+		} else {
+			c.JSON(200, gin.H{"errcode": 10200, "errmsg": "查询数据错误"})
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+	}
 }
 
 func createSystem(c *gin.Context) {

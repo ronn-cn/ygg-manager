@@ -222,7 +222,6 @@ export default {
     return {
       passwd1: "",
       passwd2: "",
-
       list: null,
       listLoading: true,
 
