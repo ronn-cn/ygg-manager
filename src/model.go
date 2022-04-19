@@ -118,14 +118,15 @@ func (System) TableName() string {
 
 type License struct {
 	Model
-	Code           string  `json:"code" gorm:"column:code;primaryKey;NOT NULL"`                    // 授权码
-	Count          int     `json:"count" gorm:"column:count"`                                      // 授权注册数量
-	Permit         string  `json:"permit" gorm:"column:permit"`                                    // 允许注册的系统
-	ExpiresAt      string  `json:"expires_at" gorm:"column:expires_at"`                            // 过期时间
-	VendorJson     string  `json:"vendor_json" gorm:"column:vendor_json"`                          // 厂商信息
-	CreatorAccount Account `json:"creator" gorm:"ForeignKey:CreatorID;AssociationForeignKey:OUID"` // 创建者
-	CreatorID      string  `json:"creator_id" gorm:"column:creator"`                               // 创建者ID
-	Remark         string  `json:"remark" gorm:"column:remark"`                                    // 备注
+	Code           string   `json:"code" gorm:"column:code;primaryKey;NOT NULL"`                    // 授权码
+	Count          int      `json:"count" gorm:"column:count"`                                      // 授权注册数量
+	UseCount       int      `json:"use_count" gorm:"column:use_count"`                              // 已使用的数量
+	Permit         string   `json:"permit" gorm:"column:permit"`                                    // 允许注册的系统
+	ExpiresAt      int64    `json:"expires_at" gorm:"column:expires_at"`                            // 过期时间
+	VendorJson     string   `json:"vendor_json" gorm:"column:vendor_json"`                          // 厂商信息
+	CreatorAccount *Account `json:"creator" gorm:"ForeignKey:CreatorID;AssociationForeignKey:OUID"` // 创建者
+	CreatorID      *string  `json:"creator_id" gorm:"column:creator"`                               // 创建者ID
+	Remark         string   `json:"remark" gorm:"column:remark"`                                    // 备注
 }
 
 func (License) TableName() string {

@@ -23,7 +23,7 @@ export function createSystem(data) {
 export function updateSystem(data) {
   return request({
     url: '/system/update-system',
-    method: 'post',
+    method: 'put',
     data
   })
 }
@@ -33,8 +33,8 @@ export function updateSystem(data) {
 export function deleteSystem(id) {
   return request({
     url: '/system/delete-system',
-    method: 'get',
-    params: { id }
+    method: 'delete',
+    params: { ouid:id }
   })
 }
 

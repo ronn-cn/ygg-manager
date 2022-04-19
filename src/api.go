@@ -106,26 +106,6 @@ func handleDashboard(c *gin.Context, ps []string) {
 	}
 }
 
-func handleLicense(c *gin.Context, ps []string) {
-	if len(ps) < 1 {
-		c.Status(404)
-		return
-	}
-	switch ps[1] {
-	case "get-license-list": // 查询应用列表
-		if c.Request.Method != "GET" {
-			c.Status(405)
-			return
-		}
-		var license []License
-		PGDB.Find(&license)
-		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(license), "items": license}})
-	default:
-		c.Status(404)
-		return
-	}
-}
-
 func handleCompany(c *gin.Context, ps []string) {
 	if len(ps) < 1 {
 		c.Status(404)

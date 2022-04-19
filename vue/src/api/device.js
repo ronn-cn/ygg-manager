@@ -23,7 +23,7 @@ export function createDevice(data) {
 export function updateDevice(data) {
   return request({
     url: '/device/update-device',
-    method: 'post',
+    method: 'put',
     data
   })
 }
@@ -33,8 +33,8 @@ export function updateDevice(data) {
 export function deleteDevice(id) {
   return request({
     url: '/device/delete-device',
-    method: 'get',
-    params: { id }
+    method: 'delete',
+    params: { ouid:id }
   })
 }
 

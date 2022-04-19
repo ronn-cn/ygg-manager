@@ -44,7 +44,7 @@
       :filters="statusOptions"
       :filter-method="filterStatus">
         <template slot-scope="{row}">
-          <!-- <span>{{ row.status?row.status.name:"" }}</span> -->
+          <span>{{ row.status?row.status.name:"" }}</span>
         </template>
       </el-table-column>
       <el-table-column
@@ -53,7 +53,7 @@
       :filters="systemOptions"
       :filter-method="filterSystem">
         <template slot-scope="{row}">
-          <!-- <span>{{ row.system?row.system.name:"" }}</span> -->
+          <span>{{ row.system?row.system.name:"" }}</span>
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" sortable prop="created_at" :formatter="formatTime"></el-table-column>
@@ -70,6 +70,8 @@
               <el-dropdown-item>删除</el-dropdown-item>
               <el-dropdown-item>下载</el-dropdown-item>
               <el-dropdown-item>更新</el-dropdown-item>
+              <el-dropdown-item>安装</el-dropdown-item>
+              <el-dropdown-item>产品信息</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </template>
@@ -112,29 +114,51 @@
 
     <!-- 设备查看弹窗 -->
     <el-dialog :visible.sync="dialogDeviceLookVisible" :title="dialogDeviceTitle">
-      <el-form label-position="left" :model="deviceData" class="demo-table-expand">
-        <el-form-item label="设备名称">
-          <span>{{ deviceData.name }}</span>
-        </el-form-item>
-        <el-form-item label="设备OUID">
-          <span>{{ deviceData.ouid }}</span>
-        </el-form-item>
-        <el-form-item label="设备PIN码">
+      <el-descriptions class="margin-top" :column="3" border>
+        <el-descriptions-item label="设备名称">
+          {{ deviceData.name }}
+        </el-descriptions-item>
+        <el-descriptions-item span="2" label="OUID">
+          {{ deviceData.ouid }}
+        </el-descriptions-item>
+        <el-descriptions-item label="PIN码">
           <span>{{ deviceData.pin }}</span>
-        </el-form-item>
-        <el-form-item label="设备系统">
-          <!-- <span>{{ deviceData.system.name }}</span> -->
-        </el-form-item>
-        <el-form-item label="设备状态">
-          <!-- <span>{{ deviceData.status.name }}</span> -->
-        </el-form-item>
-        <el-form-item label="授权注册码">
+        </el-descriptions-item>
+        
+        <el-descriptions-item label="系统">
+          <span v-if = "deviceData.system != undefined">{{ deviceData.system.name }}</span>
+        </el-descriptions-item>
+        
+        <el-descriptions-item label="状态">
+          <span v-if = "deviceData.status != undefined">{{ deviceData.status.name }}</span>
+        </el-descriptions-item>
+
+        <el-descriptions-item label="授权码">
           <span v-if = "deviceData.license != undefined">{{ deviceData.license.code }}</span>
-        </el-form-item>
-        <el-form-item label="设备备注">
-          <span>{{ deviceData.remark }}</span>
-        </el-form-item>
-      </el-form>
+        </el-descriptions-item>
+        
+        <el-descriptions-item label="创建时间">
+          {{ parseTime(deviceData.created_at) }}
+        </el-descriptions-item>
+        
+        <el-descriptions-item label="更新时间">
+          {{ parseTime(deviceData.updated_at) }}
+        </el-descriptions-item>
+
+        <el-descriptions-item span="3" label="备注">
+          {{ deviceData.remark }}
+        </el-descriptions-item>
+
+        
+        <!-- <el-descriptions-item span="3" label="产品信息">
+          {{ deviceData.remark }}
+        </el-descriptions-item>
+
+        
+        <el-descriptions-item span="3" label="安装信息">
+          {{ deviceData.remark }}
+        </el-descriptions-item> -->
+      </el-descriptions>
     </el-dialog>
 
   </div>
@@ -281,6 +305,9 @@ export default {
         return y + '-' + mo + '-' + d + ' ' + h + ':' + mi + ':' + s
       }
     },
+    parseTime(time){
+      return parseTime(time)
+    },
     filterStatus(value, row) {
       return row.status_id === value;
     },
@@ -364,7 +391,7 @@ export default {
     },
     // 处理更新设备提交
     updateDeviceData() {
-      this.$refs['deviceDataForm'].validate((valid) => {
+      this.$refs['deviceData'].validate((valid) => {
         if (valid) {
           const tempData = Object.assign({}, this.deviceData)
           updateDevice(tempData).then(() => {
