@@ -61,9 +61,9 @@ func createLicense(c *gin.Context) {
 			} else {
 				c.JSON(200, gin.H{"errcode": 10203, "errmsg": "创建数据错误"})
 			}
-		} else {
-			logger.Debugf("绑定参数错误：%v", err)
-			c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
+			} else {
+				logger.Debugf("绑定参数错误：%v", err)
+				c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
 		}
 	} else {
 		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})

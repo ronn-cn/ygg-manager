@@ -23,7 +23,7 @@ export function createCompany(data) {
 export function updateCompany(data) {
   return request({
     url: '/company/update-company',
-    method: 'post',
+    method: 'put',
     data
   })
 }
@@ -33,8 +33,8 @@ export function updateCompany(data) {
 export function deleteCompany(id) {
   return request({
     url: '/company/delete-company',
-    method: 'get',
-    params: { id }
+    method: 'delete',
+    params: { id: id }
   })
 }
 

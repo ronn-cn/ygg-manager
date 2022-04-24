@@ -38,8 +38,7 @@
       </el-table-column>
       <el-table-column label="操作" align="center" fixed="right" width="150" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <el-link class="el-dropdown-link" type="primary" @click="handleSystemClick('look',row)">查看</el-link>&nbsp;
-          <!-- <el-link class="el-dropdown-link" type="primary" @click="handleSystemClick('update',row)">编辑</el-link>&nbsp; -->
+          <el-link class="el-dropdown-link" type="primary" @click="handleLicenseClick('look',row)">查看</el-link>&nbsp;
           <el-dropdown>
             <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
             <el-dropdown-menu slot="dropdown">
@@ -52,7 +51,7 @@
     </el-table>
 
     
-      <!-- 新建设备弹窗 -->
+    <!-- 新建设备弹窗 -->
     <el-dialog :title="dialogLicenseTitle" :visible.sync="dialogLicenseFormVisible">
       <el-form ref="licenseData" :model="licenseData" label-position="left" label-width="100px">
         <el-form-item label="密钥Code">
@@ -94,6 +93,46 @@
         <el-button type="primary" @click="dialogLicenseStatus==='create'?createLicenseData():updateLicenseData()"> 确认 </el-button>
       </div>
     </el-dialog>
+
+    
+    <!-- 查看密钥弹窗 -->
+    <el-dialog :visible.sync="dialogLicenseLookVisible" :title="dialogLicenseTitle">
+      <el-descriptions class="margin-top" :column="3" border>
+        <el-descriptions-item label="Code">
+          {{ licenseData.name }}
+        </el-descriptions-item>
+        <el-descriptions-item label="数量（使用/总计）">
+          <span>{{ licenseData.address }}</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="类型">
+          {{ licenseData.type }}
+        </el-descriptions-item>
+        
+        <el-descriptions-item label="电话">
+          <span>{{ licenseData.telephone }}</span>
+        </el-descriptions-item>
+        
+        <el-descriptions-item label="Email">
+          <span>{{ licenseData.email }}</span>
+        </el-descriptions-item>
+
+        <el-descriptions-item label="网站">
+          <span>{{ licenseData.website }}</span>
+        </el-descriptions-item>
+        
+        <el-descriptions-item label="创建时间">
+          {{ parseTime(licenseData.created_at) }}
+        </el-descriptions-item>
+
+        <el-descriptions-item label="更新时间">
+          {{ parseTime(licenseData.updated_at) }}
+        </el-descriptions-item>
+        
+        <el-descriptions-item span="3" label="简介">
+          <span>{{ licenseData.description }}</span>
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 
@@ -103,16 +142,7 @@ import { getSystemList } from '@/api/system'
 
 export default {
   name: 'InlineEditTable',
-  filters: {
-    statusFilter(status) {
-      const statusMap = {
-        published: 'success',
-        draft: 'info',
-        deleted: 'danger'
-      }
-      return statusMap[status]
-    }
-  },
+  filters: { },
   data() {
     return {
       list: [],
@@ -190,7 +220,7 @@ export default {
       getLicenseList(this.listQuery).then(response => {
         this.list = response.data.items
         console.log("list:",this.list)
-        this.total = response.data.total
+          
         
         this.listLoading = false
       })

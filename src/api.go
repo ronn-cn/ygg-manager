@@ -104,27 +104,7 @@ func handleDashboard(c *gin.Context, ps []string) {
 	default:
 		c.Status(404)
 	}
-}
-
-func handleCompany(c *gin.Context, ps []string) {
-	if len(ps) < 1 {
-		c.Status(404)
-		return
-	}
-	switch ps[1] {
-	case "get-company-list": // 查询应用列表
-		if c.Request.Method != "GET" {
-			c.Status(405)
-			return
-		}
-		var companies []Company // 公司复数
-		PGDB.Find(&companies)
-		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(companies), "items": companies}})
-	default:
-		c.Status(404)
-		return
-	}
-}
+}	
 
 func handleRecord(c *gin.Context, ps []string) {
 	if len(ps) < 1 {

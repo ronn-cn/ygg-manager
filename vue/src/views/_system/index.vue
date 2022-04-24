@@ -356,7 +356,7 @@ export default {
       })
     },
     updateSystemData() {
-      this.$refs['dataForm'].validate((valid) => {
+      this.$refs['systemData'].validate((valid) => {
         if (valid) {
           const tempData = Object.assign({}, this.systemData)
           updateSystem(tempData).then(() => {

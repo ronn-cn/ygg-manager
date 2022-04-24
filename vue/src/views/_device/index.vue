@@ -90,7 +90,7 @@
           <el-input v-model="deviceData.name" placeholder="请输入设备名称" />
         </el-form-item>
         <el-form-item label="设备PIN码">
-          <el-input v-model="deviceData.pin" placeholder="不填写，默认自动生成6位PIN码"/>
+          <el-input v-model="deviceData.pin" placeholder="不填写，默认自动生成6位PIN码" show-password/>
         </el-form-item>
         <el-form-item label="设备系统">
           <el-select v-model="deviceData.system_ouid" class="filter-item" placeholder="请选择设备系统">

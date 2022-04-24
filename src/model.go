@@ -149,7 +149,7 @@ type Company struct {
 	Address     string `json:"address" gorm:"column:address"`                      // 单位地址
 	Telephone   string `json:"telephone" gorm:"column:telephone"`                  // 单位电话
 	Email       string `json:"email" gorm:"column:email"`                          // 单位邮箱
-	Webside     string `json:"website" gorm:"column:webside"`                      // 单位网站
+	Website     string `json:"website" gorm:"column:website"`                      // 单位网站
 	Description string `json:"description" gorm:"column:description"`              // 单位简介
 	CreatedAt   int64  `json:"created_at" gorm:"column:created_at;autoCreateTime"` // 创建时间
 	UpdatedAt   int64  `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"` // 更新时间
