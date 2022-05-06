@@ -8,7 +8,7 @@
           <el-input v-model="setting.pin" show-password  placeholder="本机的PIN码"></el-input>
         </el-form-item>
         <el-form-item label="私钥" prop="prikey">
-          <el-input v-model="setting.prikey" placeholder="本程序的私有密钥"/>
+          <el-input v-model="setting.prikey" show-password  placeholder="本程序的私有密钥"/>
         </el-form-item>
         <el-form-item label="公钥" prop="pubkey">
           <el-input v-model="setting.pubkey" placeholder="本程序的公共密钥"/>
@@ -18,16 +18,15 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false"> 恢复默认 </el-button>
-        <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()"> 保存 </el-button>
+        <el-button @click="resetSetting()"> 恢复默认 </el-button>
+        <el-button type="primary" @click="saveData()"> 保存 </el-button>
       </div>
   </div>
 </template>
 
 <script>
-import { getSetting } from '@/api/setting'
+import { getSetting, saveSetting } from '@/api/setting'
 import waves from '@/directive/waves' // waves directive
-import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
 
 
@@ -73,29 +72,15 @@ export default {
       })
     },
     resetSetting() {
-      this.setting = {
-        port: '8800'
-      }
-    },
-    handleCreate() {
-      this.resetTemp()
-      this.dialogStatus = 'create'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
+      this.setting.port = '8800'
     },
     saveData() {
       this.$refs['setting'].validate((valid) => {
         if (valid) {
           const tempData = Object.assign({}, this.setting)
-          updateArticle(tempData).then(() => {
-            const index = this.list.findIndex(v => v.id === this.temp.id)
-            this.list.splice(index, 1, this.temp)
-            this.dialogFormVisible = false
-            this.$notify({
-              title: 'Success',
-              message: 'Update Successfully',
+          saveSetting(tempData).then(() => {
+            this.$message({
+              message: '保存成功',
               type: 'success',
               duration: 2000
             })

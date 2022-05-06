@@ -4,8 +4,8 @@ package main
 type Configure struct {
 	Ouid     string `toml:"ouid" json:"ouid"`
 	Pin      string `toml:"pin" json:"pin"`
-	PriKey   string `toml:"priKey" json:"priKey"`
-	PubKey   string `toml:"pubKey" json:"pubKey"`
+	PriKey   string `toml:"prikey" json:"prikey"`
+	PubKey   string `toml:"pubkey" json:"pubkey"`
 	Port     string `toml:"port" json:"port"`
 	DbHost   string `toml:"db_host" json:"db_host"`
 	DbPort   string `toml:"db_port" json:"db_port"`
@@ -193,9 +193,9 @@ func (Version) TableName() string {
 }
 
 type Setting struct {
-	ID    int64  `json:"id" gorm:"column:id;primaryKey;NOT NULL"` // 自增ID
-	Key   string `json:"key" gorm:"column:key;NOT NULL"`          // Key
-	Value string `json:"value" gorm:"column:value"`               // Value
+	ID    *int64 `json:"id" gorm:"column:id;primaryKey;autoIncrement;NOT NULL"` // 自增ID
+	Key   string `json:"key" gorm:"column:key;NOT NULL"`                        // Key
+	Value string `json:"value" gorm:"column:value"`                             // Value
 }
 
 func (Setting) TableName() string {

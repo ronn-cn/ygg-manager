@@ -97,7 +97,7 @@ func updateApplication(c *gin.Context) {
 	}
 	var app Application
 	if err := c.BindJSON(&app); err == nil {
-		if result := PGDB.Debug().Model(&Application{Appid: app.Appid}).Select("Name", "Type", "Latest", "Status", "Remark").Updates(&app); result.Error == nil {
+		if result := PGDB.Debug().Model(&Application{Appid: app.Appid}).Select("Name", "Type", "Latest", "Status", "Depend", "Remark").Updates(&app); result.Error == nil {
 			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": app.Appid})
 		} else {
 			c.JSON(200, gin.H{"errcode": 10204, "errmsg": "更新数据错误"})

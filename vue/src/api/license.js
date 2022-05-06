@@ -33,8 +33,8 @@ export function updateLicense(data) {
 export function deleteLicense(id) {
   return request({
     url: '/license/delete-license',
-    method: 'get',
-    params: { id }
+    method: 'delete',
+    params: {"code":id}
   })
 }
 

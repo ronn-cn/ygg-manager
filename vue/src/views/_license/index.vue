@@ -2,10 +2,11 @@
   <div class="app-container">
     <el-button type="primary" @click="handleLicenseClick('create',null)">新建密钥</el-button>
 
-    <el-table v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%; margin-top:30px;">
+    <el-table v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%; margin-top:30px;"
+      :row-class-name="tableRowClassName">
       <el-table-column align="center" label="ID" width="80">
         <template slot-scope="{row}">
-          <span>{{ row.id }}</span>
+          <span>{{ row.index }}</span>
         </template>
       </el-table-column>
 
@@ -23,13 +24,19 @@
 
       <el-table-column label="允许系统">
         <template slot-scope="{row}">
+          <div v-for="sys in getSystemName(row.permit)" :key="sys">
+            <el-tag style="margin:2px 0" size="small" v-if="sys!=''">{{sys}}</el-tag>
+          </div>
         </template>
       </el-table-column>
       
       <el-table-column label="创建时间" align="center" sortable prop="created_at" :formatter="formatTime"></el-table-column>
       <el-table-column label="到期时间" align="center" sortable prop="expires_at" :formatter="formatTime"></el-table-column>
       <el-table-column align="center" label="状态">
-        
+        <template slot-scope="{row}">
+          <span v-if="row.status == '正常'" style="color:green;">{{ row.status }}</span>
+          <span v-else style="color:red;">{{ row.status }}</span>
+        </template>
       </el-table-column>
       <el-table-column align="center" label="备注">
         <template slot-scope="{row}">
@@ -43,7 +50,7 @@
             <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item>使失效</el-dropdown-item>
-              <el-dropdown-item>删除</el-dropdown-item>
+              <el-dropdown-item @click.native="deleteLicenseData(row.code)">删除</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </template>
@@ -98,26 +105,16 @@
     <!-- 查看密钥弹窗 -->
     <el-dialog :visible.sync="dialogLicenseLookVisible" :title="dialogLicenseTitle">
       <el-descriptions class="margin-top" :column="3" border>
-        <el-descriptions-item label="Code">
-          {{ licenseData.name }}
+        <el-descriptions-item span="2" label="Code">
+          {{ licenseData.code }}
         </el-descriptions-item>
         <el-descriptions-item label="数量（使用/总计）">
-          <span>{{ licenseData.address }}</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="类型">
-          {{ licenseData.type }}
+          <span>{{ licenseData.use_count+"/"+ licenseData.count }}</span>
         </el-descriptions-item>
         
-        <el-descriptions-item label="电话">
-          <span>{{ licenseData.telephone }}</span>
-        </el-descriptions-item>
-        
-        <el-descriptions-item label="Email">
-          <span>{{ licenseData.email }}</span>
-        </el-descriptions-item>
-
-        <el-descriptions-item label="网站">
-          <span>{{ licenseData.website }}</span>
+        <el-descriptions-item label="状态">
+          <span v-if="licenseData.status == '正常'" style="color:green;">{{ licenseData.status }}</span>
+          <span v-else style="color:red;">{{ licenseData.status }}</span>
         </el-descriptions-item>
         
         <el-descriptions-item label="创建时间">
@@ -128,8 +125,15 @@
           {{ parseTime(licenseData.updated_at) }}
         </el-descriptions-item>
         
-        <el-descriptions-item span="3" label="简介">
-          <span>{{ licenseData.description }}</span>
+        <el-descriptions-item span="3" label="备注">
+          <span>{{ licenseData.remark }}</span>
+        </el-descriptions-item>
+        
+        <el-descriptions-item span="3" label="允许系统">
+          <el-table :data="licenseData.permitOptions" style="width: 100%">
+            <el-table-column prop="label" label="系统名称"> </el-table-column>
+            <el-table-column prop="value" label="系统ID" show-overflow-tooltip> </el-table-column>
+          </el-table>
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
@@ -137,8 +141,9 @@
 </template>
 
 <script>
-import { getLicenseList, createLicense } from '@/api/license'
+import { getLicenseList, createLicense,deleteLicense } from '@/api/license'
 import { getSystemList } from '@/api/system'
+import { parseTime } from '@/utils'
 
 export default {
   name: 'InlineEditTable',
@@ -208,6 +213,7 @@ export default {
       dialogLicenseStatus: '',
       dialogLicenseTitle: '',
       dialogLicenseFormVisible: false,
+      dialogLicenseLookVisible: false,
     }
   },
   created() {
@@ -225,10 +231,35 @@ export default {
         this.listLoading = false
       })
     },
+    tableRowClassName({row,rowIndex}){
+      row.index = rowIndex;
+      row.status = "正常";
+      if (row.expires_at <= parseInt(new Date().getTime()/1000)) {
+        row.status = "已过期";
+      }
+      row.permitNames = [];
+      for (var i = 0; i < this.systemList.length; i++){
+        if(row.permit.includes(this.systemList[i].ouid)){
+          row.permitNames.push(this.systemList[i].name)
+        }
+      }
+    },
     getSystemList(){
       getSystemList().then(response => {
         this.systemList = response.data.items
       })
+    },
+    getSystemName(permit){
+      let names = [];
+      for (var i = 0; i < this.systemList.length; i++){
+        if(permit.includes(this.systemList[i].ouid)){
+          names.push(this.systemList[i].name)
+        }
+      }
+      return names
+    },
+    parseTime(time){
+      return parseTime(time)
     },
     // 格式化时间
     formatTime(row, column) {
@@ -285,6 +316,16 @@ export default {
         case 'look':
           this.dialogLicenseStatus = 'look'
           this.dialogLicenseTitle = "查看密钥"
+          data.permitOptions = [];
+          for (var i = 0; i < this.systemList.length; i++){
+            if(data.permit.includes(this.systemList[i].ouid)){
+              var opt = {
+                label: this.systemList[i].name,
+                value: this.systemList[i].ouid,
+              }
+              data.permitOptions.push(opt)
+            }
+          }
           this.licenseData = data
           this.dialogLicenseLookVisible = true
           break;
@@ -312,7 +353,9 @@ export default {
         this.licenseData.permitOptions = [];
       }
       
-      this.licenseData.permit = this.licenseData.permitarr.toString()
+      if (this.licenseData.permitarr){
+        this.licenseData.permit = this.licenseData.permitarr.toString()
+      }
       for (var i = 0; i < this.systemList.length; i++){
         if(this.licenseData.permit.includes(this.systemList[i].ouid)){
           let opt = {
@@ -329,7 +372,7 @@ export default {
       this.$refs['licenseData'].validate((valid) => {
         if (valid) {
           var date = new Date(this.licenseData.expires_value)
-          this.licenseData.expires_at = int(date.getTime()/1000)
+          this.licenseData.expires_at = parseInt(date.getTime()/1000)
           createLicense(this.licenseData).then(() => {
             this.getList()
             this.dialogLicenseFormVisible = false
@@ -341,7 +384,28 @@ export default {
           })
         }
       })
-    }
+    },
+    deleteLicenseData(code){
+      console.log("要删除的code",code)
+      this.$confirm('此操作将永久删除该密钥, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        deleteLicense(code).then(() => {
+            this.getList()
+            this.$message({
+              type: 'success',
+              message: '删除密钥成功!'
+            });
+          });
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除密钥'
+        });          
+      });
+    },
   }
 }
 </script>

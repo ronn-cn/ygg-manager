@@ -26,6 +26,7 @@
       <el-table-column label="应用名称" min-width="150">
         <template slot-scope="{row}">
           <span>{{ row.name }}</span>
+          <el-tag style="margin-left:5px;" v-if="row.status == 0" size="mini" type="info" effect="dark">开发</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="APPID" min-width="150" align="center" show-overflow-tooltip>
@@ -53,8 +54,8 @@
           <el-dropdown>
             <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item>发布版本</el-dropdown-item>
-              <el-dropdown-item>设为正式/设为开发</el-dropdown-item>
+              <el-dropdown-item>上传版本</el-dropdown-item>
+              <el-dropdown-item v-if="row.status == 0">发布应用</el-dropdown-item>
               <el-dropdown-item @click.native="deleteAppData(row.appid)">删除应用</el-dropdown-item>
               <el-dropdown-item></el-dropdown-item>
             </el-dropdown-menu>
@@ -103,6 +104,57 @@
         <el-button @click="dialogApplicationFormVisible = false"> 取消 </el-button>
         <el-button type="primary" @click="dialogApplicationFormStatus==='create'?createAppData():updateAppData()"> 提交 </el-button>
       </div>
+    </el-dialog>
+
+    <!-- 应用查看弹窗 TODO：暂时先弹窗查看，后面改为单页面查看，显示应用版本列表-->
+    <el-dialog :title="dialogApplicationFormTitle" :visible.sync="dialogApplicationLookVisible">
+      <el-descriptions class="margin-top" :column="3" border>
+        <el-descriptions-item>
+          <template slot="label">应用名称</template>
+          {{ appData.name }}
+        </el-descriptions-item>
+        <el-descriptions-item span="2">
+          <template slot="label">APPID</template>
+          {{ appData.appid }}
+        </el-descriptions-item>
+        
+        <el-descriptions-item>
+          <template slot="label">类型</template>
+          <span v-if="appData.type == 0">程序</span>
+          <span v-else-if="appData.type == 1">视图</span>
+          <span v-else-if="appData.type == 2">资源</span>
+          <span v-else-if="appData.type == 3">服务</span>
+        </el-descriptions-item>
+        <el-descriptions-item span="2">
+          <template slot="label">最新版本</template>
+          {{ appData.latest }}
+        </el-descriptions-item>
+
+        <el-descriptions-item>
+          <template slot="label">状态</template>
+          {{ appData.status?'正式':'开发' }}
+        </el-descriptions-item>
+        <el-descriptions-item>
+          <template slot="label">创建时间</template>
+          {{ parseTime(appData.created_at) }}
+        </el-descriptions-item>
+        
+        <el-descriptions-item>
+          <template slot="label">更新时间</template>
+          {{ parseTime(appData.updated_at) }}
+        </el-descriptions-item>
+        <el-descriptions-item span="3" label="备注">
+          {{ appData.remark }}
+        </el-descriptions-item>
+
+        <el-descriptions-item span="3" label="依赖列表">
+          <el-table :data="appData.dependApplist" style="width: 100%">
+            <el-table-column prop="name" label="应用名称"> </el-table-column>
+            <el-table-column prop="appid" label="应用ID" show-overflow-tooltip> </el-table-column>
+            <el-table-column prop="latest" label="最新版本"> </el-table-column>
+          </el-table>
+        </el-descriptions-item>
+      </el-descriptions>
     </el-dialog>
   </div>
 </template>
@@ -170,6 +222,9 @@ export default {
     },
     tableRowClassName({row,rowIndex}){
       row.index = rowIndex;
+    },
+    parseTime(time){
+      return parseTime(time)
     },
     // 格式化时间
     formatTime(row, column) {
@@ -247,6 +302,12 @@ export default {
           this.dialogApplicationFormStatus = 'look'
           this.dialogApplicationFormTitle = "查看应用"
           this.appData = data
+          this.appData.dependApplist = [];
+          for (var i = 0; i < this.list.length; i++) {
+            if (this.appData.depend.includes(this.list[i].appid)){
+              this.appData.dependApplist.push(this.list[i]);
+            }
+          }
           this.dialogApplicationLookVisible = true
           break;
         default:
@@ -257,7 +318,9 @@ export default {
       this.$refs['appData'].validate((valid) => {
         if (valid) {
           console.log("this.appData:",this.appData)
-          this.appData.depend = this.appData.dependarr.toString()
+          if (this.appData.dependarr){
+            this.appData.depend = this.appData.dependarr.toString()
+          }
           createApplication(this.appData).then(() => {
             this.getList()
             this.dialogApplicationFormVisible = false
@@ -273,6 +336,10 @@ export default {
     updateAppData() {
       this.$refs['appData'].validate((valid) => {
         if (valid) {
+          console.log("this.appData:",this.appData)
+          if (this.appData.dependarr){
+            this.appData.depend = this.appData.dependarr.toString()
+          }
           const tempData = Object.assign({}, this.appData)
           updateApplication(tempData).then(() => {
             this.getList()

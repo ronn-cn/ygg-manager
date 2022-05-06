@@ -20,7 +20,8 @@
       </el-table-column>
       <el-table-column label="系统名称" min-width="150">
         <template slot-scope="{row}">
-          <span>{{ row.name }}</span>
+          <span>{{ row.name }}</span> 
+          <el-tag style="margin-left:5px;" v-if="row.status == 0" size="mini" type="info" effect="dark">开发</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="OUID" align="center" min-width="150" show-overflow-tooltip>
@@ -52,8 +53,8 @@
             <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item>推送更新</el-dropdown-item>
-              <el-dropdown-item>设为开发</el-dropdown-item>
-              <el-dropdown-item>删除系统</el-dropdown-item>
+              <el-dropdown-item v-if="row.status == 0">发布系统</el-dropdown-item>
+              <el-dropdown-item @click.native="deleteSystemData(row.ouid)">删除系统</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </template>
@@ -145,15 +146,15 @@
         <el-descriptions-item span="3" label="备注">
           {{ systemData.remark }}
         </el-descriptions-item>
-        
+
         <el-descriptions-item span="3" label="应用列表">
           <el-table :data="systemData.applist" style="width: 100%">
             <el-table-column prop="name" label="应用名称"> </el-table-column>
             <el-table-column prop="appid" label="应用ID" show-overflow-tooltip> </el-table-column>
             <el-table-column prop="latest" label="最新版本"> </el-table-column>
-            <el-table-column label="主应用标记" align="center">
+            <el-table-column label="标记" align="center">
               <template slot-scope="{row}">
-                <el-button v-if="row.main" type="danger" size="mini" icon="el-icon-check" circle></el-button>
+                <el-tag v-if="row.main" type="danger">主应用</el-tag>
               </template>
             </el-table-column>
           </el-table>
@@ -165,7 +166,7 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { getSystemList,createSystem } from '@/api/system'
+import { getSystemList,createSystem,updateSystem,deleteSystem } from '@/api/system'
 import { getApplicationList } from '@/api/application'
 import waves from '@/directive/waves' // waves directive
 import { parseTime } from '@/utils'
@@ -370,7 +371,28 @@ export default {
           })
         }
       })
-    }
+    },
+    deleteSystemData(ouid){
+      console.log("要删除的ouid:",ouid)
+      this.$confirm('此操作将永久删除该系统, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        deleteSystem(ouid).then(() => {
+            this.getList()
+            this.$message({
+              type: 'success',
+              message: '删除系统成功!'
+            });
+          });
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除系统'
+        });          
+      });
+    },
   }
 }
 </script>
