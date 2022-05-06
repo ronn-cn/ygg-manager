@@ -104,7 +104,7 @@ func handleDashboard(c *gin.Context, ps []string) {
 	default:
 		c.Status(404)
 	}
-}	
+}
 
 func handleRecord(c *gin.Context, ps []string) {
 	if len(ps) < 1 {
@@ -120,30 +120,6 @@ func handleRecord(c *gin.Context, ps []string) {
 		var records []Record // 日志复数
 		PGDB.Find(&records)
 		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(records), "items": records}})
-	default:
-		c.Status(404)
-		return
-	}
-}
-
-func handleSetting(c *gin.Context, ps []string) {
-	if len(ps) < 1 {
-		c.Status(404)
-		return
-	}
-	switch ps[1] {
-	case "get-setting": // 查询应用列表
-		if c.Request.Method != "GET" {
-			c.Status(405)
-			return
-		}
-		var settings []Setting // 设置复数
-		PGDB.Find(&settings)
-		redata := make(map[string]interface{})
-		for _, item := range settings {
-			redata[item.Key] = item.Value
-		}
-		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": redata})
 	default:
 		c.Status(404)
 		return

@@ -4,10 +4,10 @@
       <el-button class="filter-item"  type="primary" @click="handleDeviceClick('create',null)"> 新建设备 </el-button> 
       <el-input v-model="listQuery.name" placeholder="设备名称" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
       <el-input v-model="listQuery.ouid" placeholder="OUID" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
-      <el-select v-model="listQuery.status" placeholder="状态" clearable style="width: 90px" class="filter-item">
+      <el-select v-model="listQuery.status_id" placeholder="状态" clearable style="width: 90px" class="filter-item">
         <el-option v-for="item in statusOptions" :key="item.value" :label="item.text" :value="item.value" />
       </el-select>
-      <el-select v-model="listQuery.system" placeholder="系统" clearable class="filter-item" style="width: 130px">
+      <el-select v-model="listQuery.system_ouid" placeholder="系统" clearable class="filter-item" style="width: 130px">
         <el-option v-for="item in systemOptions" :key="item.text" :label="item.text" :value="item.value" />
       </el-select>
       <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter"> 搜 索 </el-button>
@@ -38,6 +38,10 @@
         <template slot-scope="{row}">
           <span v-if="row.showPin">{{ row.pin }}</span>
           <span v-else>******</span>
+          <!-- 修改PIN码图标按钮 -->
+          <el-tooltip class="item" effect="light" content="修改PIN码" placement="bottom-start" >
+            <em class="el-icon-edit"  style="cursor: pointer" click=""></em>
+          </el-tooltip>
           </template>
       </el-table-column>
       <el-table-column label="状态"  min-width="80" 
@@ -65,13 +69,13 @@
           <el-dropdown>
             <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item>修改密码</el-dropdown-item>
-              <el-dropdown-item>禁用/启用</el-dropdown-item>
-              <el-dropdown-item>删除</el-dropdown-item>
-              <el-dropdown-item>下载</el-dropdown-item>
-              <el-dropdown-item>更新</el-dropdown-item>
-              <el-dropdown-item>安装</el-dropdown-item>
-              <el-dropdown-item>产品信息</el-dropdown-item>
+              <el-dropdown-item >更新</el-dropdown-item>
+              <el-dropdown-item v-if="row.status_id != 11" @click.native="updateDeviceStatus()">停用</el-dropdown-item>
+              <el-dropdown-item @click.native="deleteDeviceData(row.ouid)">删除</el-dropdown-item>
+              <!-- <el-dropdown-item>修改密码</el-dropdown-item> -->
+              <!-- <el-dropdown-item>下载</el-dropdown-item> -->
+              <!-- <el-dropdown-item>安装信息</el-dropdown-item>
+              <el-dropdown-item>产品信息</el-dropdown-item> -->
             </el-dropdown-menu>
           </el-dropdown>
         </template>
@@ -165,7 +169,7 @@
 </template>
 
 <script>
-import { getDeviceList, createDevice, updateDevice } from '@/api/device'
+import { getDeviceList, createDevice, updateDevice, deleteDevice } from '@/api/device'
 import { getSystemList,createSystem } from '@/api/system'
 import waves from '@/directive/waves' // waves directive
 import { parseTime } from '@/utils'
@@ -186,8 +190,8 @@ export default {
         limit: 20,
         name: undefined,
         ouid: undefined,
-        status: undefined,
-        system: undefined
+        status_id: undefined,
+        system_ouid: undefined
       },
       // TODO：修改为api获取
       statusOptions: [{
@@ -239,7 +243,7 @@ export default {
         name: '',
         ouid: '',
         pin: '',
-        system_ouid: '',
+        system_ouid: undefined,
         status_id: 13,
         license: undefined,
         product_json: undefined,
@@ -325,6 +329,7 @@ export default {
     // 处理筛选器
     handleFilter() {
       this.listQuery.page = 1
+      console.log("查询条件：", this.listQuery)
       this.getList()
     },
     handleDeviceClick(typ,data){
@@ -360,7 +365,7 @@ export default {
         name: '',
         ouid: '',
         pin: '',
-        system_ouid: '',
+        system_ouid: undefined,
         status_id: 13,
         license: undefined,
         product_json: undefined,
@@ -405,6 +410,39 @@ export default {
           })
         }
       })
+    },
+    updateDeviceStatus(){
+      this.deviceData.status_id = 11;
+      const tempData = Object.assign({}, this.deviceData)
+      updateDevice(tempData).then(() => {
+        this.getList()
+        this.$message({
+          message: '已停用设备',
+          type: 'success',
+          duration: 2000
+        })
+      })
+    },
+    deleteDeviceData(ouid){
+      console.log("要删除的ouid:",ouid)
+      this.$confirm('此操作将永久删除该设备, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        deleteDevice(ouid).then(() => {
+            this.getList()
+            this.$message({
+              type: 'success',
+              message: '删除设备成功!'
+            });
+          });
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除设备'
+        });          
+      });
     },
     handleDelete(row, index) {
       this.$notify({

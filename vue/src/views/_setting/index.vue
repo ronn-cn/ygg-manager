@@ -1,20 +1,20 @@
 <template>
   <div class="app-container">
-      <el-form ref="settingForm" :rules="rules" :model="setting" label-position="left">
+      <el-form ref="setting" :model="setting" label-position="left" label-width="100px">
         <el-form-item label="OUID" prop="ouid">
-          <el-input v-model="setting.ouid" />
+          <el-input v-model="setting.ouid" placeholder="本机的OUID"/>
         </el-form-item>
         <el-form-item label="PIN" prop="pin">
-          <el-input v-model="setting.pin" show-password></el-input>
+          <el-input v-model="setting.pin" show-password  placeholder="本机的PIN码"></el-input>
         </el-form-item>
         <el-form-item label="私钥" prop="prikey">
-          <el-input v-model="setting.prikey" />
+          <el-input v-model="setting.prikey" placeholder="本程序的私有密钥"/>
         </el-form-item>
         <el-form-item label="公钥" prop="pubkey">
-          <el-input v-model="setting.pubkey" />
+          <el-input v-model="setting.pubkey" placeholder="本程序的公共密钥"/>
         </el-form-item>
         <el-form-item label="端口号" prop="port">
-          <el-input v-model="setting.port" />
+          <el-input v-model="setting.port" placeholder="默认运行端口8800"/>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -50,31 +50,14 @@ export default {
   },
   data() {
     return {
-      tableKey: 0,
-      total: 0,
       initLoading: true,
-      importanceOptions: [1, 2, 3],
       setting: {
         ouid: '',
-        pin: '2222222',
+        pin: '',
         prikey: '',
         pubkey: '',
-        port: ''
+        port: '8800'
       },
-      dialogFormVisible: false,
-      dialogStatus: '',
-      textMap: {
-        update: 'Edit',
-        create: 'Create'
-      },
-      dialogPvVisible: false,
-      pvData: [],
-      rules: {
-        type: [{ required: true, message: 'type is required', trigger: 'change' }],
-        timestamp: [{ type: 'date', required: true, message: 'timestamp is required', trigger: 'change' }],
-        title: [{ required: true, message: 'title is required', trigger: 'blur' }]
-      },
-      downloadLoading: false
     }
   },
   created() {
@@ -89,28 +72,9 @@ export default {
         this.initLoading = false
       })
     },
-    handleModifyStatus(row, status) {
-      this.$message({
-        message: '操作Success',
-        type: 'success'
-      })
-      row.status = status
-    },
-    sortChange(data) {
-      const { prop, order } = data
-      if (prop === 'id') {
-        this.sortByID(order)
-      }
-    },
-    resetTemp() {
-      this.temp = {
-        id: undefined,
-        importance: 1,
-        remark: '',
-        timestamp: new Date(),
-        title: '',
-        status: 'published',
-        type: ''
+    resetSetting() {
+      this.setting = {
+        port: '8800'
       }
     },
     handleCreate() {
@@ -121,38 +85,10 @@ export default {
         this.$refs['dataForm'].clearValidate()
       })
     },
-    createData() {
-      this.$refs['dataForm'].validate((valid) => {
+    saveData() {
+      this.$refs['setting'].validate((valid) => {
         if (valid) {
-          this.temp.id = parseInt(Math.random() * 100) + 1024 // mock a id
-          this.temp.author = 'vue-element-admin'
-          createArticle(this.temp).then(() => {
-            this.list.unshift(this.temp)
-            this.dialogFormVisible = false
-            this.$notify({
-              title: 'Success',
-              message: 'Created Successfully',
-              type: 'success',
-              duration: 2000
-            })
-          })
-        }
-      })
-    },
-    handleUpdate(row) {
-      this.temp = Object.assign({}, row) // copy obj
-      this.temp.timestamp = new Date(this.temp.timestamp)
-      this.dialogStatus = 'update'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
-    },
-    updateData() {
-      this.$refs['dataForm'].validate((valid) => {
-        if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
+          const tempData = Object.assign({}, this.setting)
           updateArticle(tempData).then(() => {
             const index = this.list.findIndex(v => v.id === this.temp.id)
             this.list.splice(index, 1, this.temp)
@@ -167,44 +103,6 @@ export default {
         }
       })
     },
-    handleDelete(row, index) {
-      this.$notify({
-        title: 'Success',
-        message: 'Delete Successfully',
-        type: 'success',
-        duration: 2000
-      })
-      this.list.splice(index, 1)
-    },
-    handleFetchPv(pv) {
-      fetchPv(pv).then(response => {
-        this.pvData = response.data.pvData
-        this.dialogPvVisible = true
-      })
-    },
-    handleDownload() {
-      this.downloadLoading = true
-      import('@/vendor/Export2Excel').then(excel => {
-        const tHeader = ['timestamp', 'title', 'type', 'importance', 'status']
-        const filterVal = ['timestamp', 'title', 'type', 'importance', 'status']
-        const data = this.formatJson(filterVal)
-        excel.export_json_to_excel({
-          header: tHeader,
-          data,
-          filename: 'table-list'
-        })
-        this.downloadLoading = false
-      })
-    },
-    formatJson(filterVal) {
-      return this.list.map(v => filterVal.map(j => {
-        if (j === 'timestamp') {
-          return parseTime(v[j])
-        } else {
-          return v[j]
-        }
-      }))
-    }
   }
 }
 </script>

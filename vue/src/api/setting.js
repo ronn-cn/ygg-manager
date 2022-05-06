@@ -7,3 +7,11 @@ export function getSetting() {
     method: 'get'
   })
 }
+
+export function saveSetting(data) {
+  return request({
+    url: '/setting/save-setting',
+    method: 'post',
+    data
+  })
+}

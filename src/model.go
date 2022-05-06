@@ -2,16 +2,16 @@ package main
 
 // 配置文件结构体
 type Configure struct {
-	Ouid     string `toml:"Ouid"`
-	Pin      string `toml:"Pin"`
-	PriKey   string `toml:"PriKey"`
-	PubKey   string `toml:"PubKey"`
-	Port     string `toml:"Port"`
-	DbHost   string `toml:"DbHost"`
-	DbPort   string `toml:"DbPort"`
-	DbUser   string `toml:"DbUser"`
-	DbPasswd string `toml:"DbPasswd"`
-	DbName   string `toml:"DbName"`
+	Ouid     string `toml:"ouid" json:"ouid"`
+	Pin      string `toml:"pin" json:"pin"`
+	PriKey   string `toml:"priKey" json:"priKey"`
+	PubKey   string `toml:"pubKey" json:"pubKey"`
+	Port     string `toml:"port" json:"port"`
+	DbHost   string `toml:"db_host" json:"db_host"`
+	DbPort   string `toml:"db_port" json:"db_port"`
+	DbUser   string `toml:"db_user" json:"db_user"`
+	DbPasswd string `toml:"db_passwd" json:"db_passwd"`
+	DbName   string `toml:"db_name" json:"db_name"`
 }
 
 // gorm.Model 的定义

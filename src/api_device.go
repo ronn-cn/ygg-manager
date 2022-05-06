@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // 处理设备接口
@@ -25,6 +26,8 @@ func handleDevice(c *gin.Context, ps []string) {
 		updateDevice(c)
 	case "delete-device":
 		deleteDevice(c)
+	case "push-update":
+		pushUpdateToDevice(c)
 	default:
 		c.Status(404)
 		return
@@ -39,23 +42,42 @@ func getDeviceList(c *gin.Context) {
 	if account, err := VerifyToken(c); err == nil {
 		fmt.Println(account)
 
+		namestr := c.Query("name")
+		ouidstr := c.Query("ouid")
+		statusstr := c.Query("status_id")
+		systemstr := c.Query("system_ouid")
+
+		var tx *gorm.DB = PGDB
+		if namestr != "" {
+			tx = PGDB.Where("name LIKE ?", "%"+namestr+"%")
+		}
+		if ouidstr != "" {
+			tx = PGDB.Where("ouid LIKE ?", "%"+ouidstr+"%")
+		}
+		if statusstr != "" {
+			tx = PGDB.Where("status = ?", statusstr)
+		}
+		if systemstr != "" {
+			tx = PGDB.Where("system = ?", systemstr)
+		}
+
 		// 查询数据库操作
 		var devices []Device
 		switch account.TypeID {
 		case 3: // 判断是开发
 			fmt.Println("判断是开发,只能查看开发设备")
-			PGDB.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("status = ?", 13).Find(&devices)
+			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("status = ?", 13).Find(&devices)
 		case 4: // 判断是运维
 			fmt.Println("判断是运维,只能查看除开发之外的设备")
-			PGDB.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("status <> ?", 13).Find(&devices)
+			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("status <> ?", 13).Find(&devices)
 		case 5: // 判断是生产
-			PGDB.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("manufacturer = ?", account.Company).Find(&devices)
+			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("manufacturer = ?", account.Company).Find(&devices)
 		case 6: // 判断是销售
-			PGDB.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("distributor = ?", account.Company).Find(&devices)
+			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("distributor = ?", account.Company).Find(&devices)
 		case 7: // 判断是客户
-			PGDB.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("customer = ?", account.Company).Find(&devices)
+			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("customer = ?", account.Company).Find(&devices)
 		default:
-			PGDB.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Find(&devices)
+			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Find(&devices)
 		}
 		fmt.Println(gin.H{"total": len(devices), "items": devices})
 		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(devices), "items": devices}})
@@ -143,4 +165,9 @@ func deleteDevice(c *gin.Context) {
 	} else {
 		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
 	}
+}
+
+// 推送更新
+func pushUpdateToDevice(c *gin.Context) {
+	// 调用YGG接口
 }
