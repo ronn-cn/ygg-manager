@@ -5,6 +5,7 @@ import (
 	"libs/logger"
 	"libs/ouid"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -95,17 +96,43 @@ func createDevice(c *gin.Context) {
 
 	if account, err := VerifyToken(c); err == nil {
 		fmt.Println(account)
+		if account.TypeID == 6 || account.TypeID == 7 {
+			c.JSON(200, gin.H{"errcode": 10104, "errmsg": "没有权限访问"})
+			return
+		}
+
 		// 创建账号
 		var device Device
 		if err := c.BindJSON(&device); err == nil {
+			if account.TypeID == 3 { //开发类型
+				var id int = 13
+				device.StatusID = &id
+			}
+			licenseCode := c.Query("license")
+			if licenseCode != "" {
+				// 判断注册码权限
+				device.LicenseCode = &licenseCode
+				var license License
+				if result := PGDB.Where("code = ?", licenseCode).First(&license); result.Error == nil {
+					// 查询到了
+					if !(license.ExpiresAt > time.Now().Unix() && license.UseCount < license.Count && strings.Contains(license.Permit, *device.SystemOUID)) {
+						c.JSON(200, gin.H{"errcode": 10104, "errmsg": "授权码无效，没有权限访问"})
+						return
+					}
+				}
+			}
 			if device.OUID == "" {
 				device.OUID = ouid.GenerateOUID()
+			}
+			if device.Name == "" {
+				device.Name = "未命名的新设备"
 			}
 			if device.PIN == "" {
 				rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 				device.PIN = fmt.Sprintf("%06v", rnd.Int31n(1000000))
 			}
 			if result := PGDB.Debug().Create(&device); result.Error == nil {
+				// 创建成功后，注册码-1
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device.OUID})
 			} else {
 				c.JSON(200, gin.H{"errcode": 10203, "errmsg": "创建数据错误"})

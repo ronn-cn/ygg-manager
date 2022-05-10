@@ -58,7 +58,8 @@ func saveSetting(c *gin.Context) {
 		logger.Debugf("请求的账号信息:%v", account)
 		if account.TypeID == 1 {
 			if err := c.BindJSON(&Config); err == nil {
-				configToDB()
+				configToDB()   // 配置写入数据库
+				configToFile() // 配置写入配置文件
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功"})
 			} else {
 				logger.Debugf("%v", err)

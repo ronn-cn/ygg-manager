@@ -5,6 +5,7 @@ import (
 	"errors"
 	"libs/ouid"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -82,24 +83,86 @@ func handleDashboard(c *gin.Context, ps []string) {
 	}
 	switch ps[1] {
 	case "get-data":
+		// 查询设备总数
+		var devices []Device
+		var deviceCount int64 = 0
+		var deviceTrend = []int{0, 0, 0, 0, 0, 0, 0}
+		if result := PGDB.Debug().Find(&devices); result.Error == nil {
+			deviceCount = result.RowsAffected
+		}
+
+		// 查询系统总数
+		var systems []System
+		var systemCount int64 = 0
+		// var systemTrend = []int{0, 0, 0, 0, 0, 0, 0}
+		if result := PGDB.Debug().Find(&systems); result.Error == nil {
+			systemCount = result.RowsAffected
+		}
+
+		// 查询应用总数
+		var apps []Application
+		var appCount int64 = 0
+		if result := PGDB.Debug().Find(&apps); result.Error == nil {
+			appCount = result.RowsAffected
+		}
+
+		// 查询版本总数
+		var versions []Version
+		var versionCount int64 = 0
+		if result := PGDB.Debug().Find(&versions); result.Error == nil {
+			versionCount = result.RowsAffected
+		}
+
+		// 查询账户总数
+		var accounts []Account
+		var accountCount int64 = 0
+		if result := PGDB.Debug().Find(&accounts); result.Error == nil {
+			accountCount = result.RowsAffected
+		}
+
+		// 查询密钥总数
+		var licenses []License
+		var licenseCount int64 = 0
+		if result := PGDB.Debug().Find(&licenses); result.Error == nil {
+			licenseCount = result.RowsAffected
+		}
+
+		nTime := time.Now()
+		var oldTimeUnix int64 = nTime.Unix()
+		for i := 0; i < 7; i++ {
+			yTime := nTime.AddDate(0, 0, -i)
+			dateStr := yTime.Format("2006-01-02")
+			dayTime, _ := time.ParseInLocation("2006-01-02", dateStr, time.Local)
+			dayTimeUnix := dayTime.Unix()
+
+			for _, dev := range devices {
+				if dev.CreatedAt >= dayTimeUnix && dev.CreatedAt < oldTimeUnix {
+					deviceTrend[i]++
+				}
+			}
+			oldTimeUnix = dayTimeUnix
+		}
+
 		reData := make(map[string]interface{})
-		reData["device_count"] = 10
-		reData["assembly_count"] = 11
-		reData["application_count"] = 12
-		reData["customer_count"] = 6
-		reData["dealer_count"] = 5
-		reData["facturer_count"] = 5
+		reData["device_count"] = deviceCount
+		reData["system_count"] = systemCount
+		reData["application_count"] = appCount
+		reData["version_count"] = versionCount
+		reData["customer_count"] = 6 // 客户总数
+		reData["dealer_count"] = 5   // 经销商总数
+		reData["facturer_count"] = 5 //生产商总数
+		reData["account_count"] = accountCount
+		reData["record_count"] = 5
+		reData["license_count"] = licenseCount
 		reData["today_device_add"] = 5
-		reData["today_assembly_add"] = 5
+		reData["today_system_add"] = 5
 		reData["today_application_add"] = 5
 		reData["today_device_produced"] = 5
 		reData["today_device_sold"] = 5
 		reData["today_device_installed"] = 5
-		reData["account_count"] = 5
-		reData["record_count"] = 5
 		reData["today_record_add"] = 5
-		reData["version_count"] = 5
 		reData["today_version_add"] = 5
+		reData["device_trend"] = deviceTrend
 		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": reData})
 	default:
 		c.Status(404)

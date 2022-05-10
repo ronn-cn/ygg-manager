@@ -7,6 +7,27 @@ import echarts from 'echarts'
 require('echarts/theme/macarons') // echarts theme
 import resize from './mixins/resize'
 
+function getday2() {
+  let days = [];
+  var date = new Date();
+  for(let i=0; i<=24*6;i+=24){		//今天加上前6天
+    let dateItem=new Date(date.getTime() - i * 60 * 60 * 1000);
+    let d= dateItem.getDate();	//获取日期
+    d = addDate0(d);	//给为单数的日期补零
+    let valueItem = d;	//组合
+    days.push(valueItem);	//添加至数组
+  }
+  return days;		
+}
+
+//给日期加0
+function addDate0(time) {
+  if (time.toString().length == 1) {
+    time = '0' + time.toString();
+  }
+  return time;
+}
+
 export default {
   mixins: [resize],
   props: {
@@ -61,10 +82,10 @@ export default {
       this.chart = echarts.init(this.$el, 'macarons')
       this.setOptions(this.chartData)
     },
-    setOptions({ expectedData, actualData } = {}) {
+    setOptions({ deviceTrend } = {}) {
       this.chart.setOption({
         xAxis: {
-          data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          data: getday2().reverse(),
           boundaryGap: false,
           axisTick: {
             show: false
@@ -90,43 +111,23 @@ export default {
           }
         },
         legend: {
-          data: ['expected', 'actual']
+          data: ['设备']
         },
         series: [{
-          name: 'expected', itemStyle: {
+          name: '设备', itemStyle: {
             normal: {
-              color: '#FF005A',
+              color: '#5a5f6b',
               lineStyle: {
-                color: '#FF005A',
+                color: '#5a5f6b',
                 width: 2
               }
             }
           },
           smooth: true,
           type: 'line',
-          data: expectedData,
+          data: deviceTrend,
           animationDuration: 2800,
           animationEasing: 'cubicInOut'
-        },
-        {
-          name: 'actual',
-          smooth: true,
-          type: 'line',
-          itemStyle: {
-            normal: {
-              color: '#3888fa',
-              lineStyle: {
-                color: '#3888fa',
-                width: 2
-              },
-              areaStyle: {
-                color: '#f3f8ff'
-              }
-            }
-          },
-          data: actualData,
-          animationDuration: 2800,
-          animationEasing: 'quadraticOut'
         }]
       })
     }

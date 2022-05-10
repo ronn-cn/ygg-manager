@@ -3,6 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+
+	"github.com/pelletier/go-toml"
 )
 
 func main() {
@@ -40,4 +43,10 @@ func configToDB() {
 			PGDB.Create(&sItem)
 		}
 	}
+}
+
+func configToFile() {
+	cfgBytes, _ := toml.Marshal(Config)
+	filepath := "./conf/manager.toml"
+	ioutil.WriteFile(filepath, cfgBytes, 0666)
 }
