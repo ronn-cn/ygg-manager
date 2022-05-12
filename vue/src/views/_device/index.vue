@@ -24,7 +24,7 @@
           <span>{{ row.index }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="设备名称" width="150" align="center">
+      <el-table-column label="设备名称" width="150">
         <template slot-scope="{row}">
           <span>{{ row.name }}</span>
         </template>

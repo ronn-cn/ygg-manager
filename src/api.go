@@ -94,7 +94,7 @@ func handleDashboard(c *gin.Context, ps []string) {
 		// 查询系统总数
 		var systems []System
 		var systemCount int64 = 0
-		// var systemTrend = []int{0, 0, 0, 0, 0, 0, 0}
+		var systemTrend = []int{0, 0, 0, 0, 0, 0, 0}
 		if result := PGDB.Debug().Find(&systems); result.Error == nil {
 			systemCount = result.RowsAffected
 		}
@@ -102,6 +102,7 @@ func handleDashboard(c *gin.Context, ps []string) {
 		// 查询应用总数
 		var apps []Application
 		var appCount int64 = 0
+		var appTrend = []int{0, 0, 0, 0, 0, 0, 0}
 		if result := PGDB.Debug().Find(&apps); result.Error == nil {
 			appCount = result.RowsAffected
 		}
@@ -140,6 +141,18 @@ func handleDashboard(c *gin.Context, ps []string) {
 					deviceTrend[i]++
 				}
 			}
+
+			for _, sys := range systems {
+				if sys.CreatedAt >= dayTimeUnix && sys.CreatedAt < oldTimeUnix {
+					systemTrend[i]++
+				}
+			}
+
+			for _, app := range apps {
+				if app.CreatedAt >= dayTimeUnix && app.CreatedAt < oldTimeUnix {
+					appTrend[i]++
+				}
+			}
 			oldTimeUnix = dayTimeUnix
 		}
 
@@ -163,6 +176,8 @@ func handleDashboard(c *gin.Context, ps []string) {
 		reData["today_record_add"] = 5
 		reData["today_version_add"] = 5
 		reData["device_trend"] = deviceTrend
+		reData["system_trend"] = systemTrend
+		reData["app_trend"] = appTrend
 		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": reData})
 	default:
 		c.Status(404)

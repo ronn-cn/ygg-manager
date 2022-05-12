@@ -83,6 +83,8 @@ export default {
           this.dashboardData = response.data
           this.lineChartData = {
             deviceTrend: response.data["device_trend"].reverse(),
+            systemTrend: response.data["system_trend"].reverse(),
+            appTrend: response.data["app_trend"].reverse(),
           }
         })
         .catch((error) => {

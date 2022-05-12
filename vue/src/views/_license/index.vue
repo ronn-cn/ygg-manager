@@ -234,6 +234,9 @@ export default {
     tableRowClassName({row,rowIndex}){
       row.index = rowIndex;
       row.status = "正常";
+      if(row.use_count >= row.count) {  
+        row.status = "满额";
+      }
       if (row.expires_at <= parseInt(new Date().getTime()/1000)) {
         row.status = "已过期";
       }

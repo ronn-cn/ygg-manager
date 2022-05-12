@@ -109,13 +109,18 @@ func createDevice(c *gin.Context) {
 				device.StatusID = &id
 			}
 			licenseCode := c.Query("license")
+			var license License
 			if licenseCode != "" {
 				// 判断注册码权限
 				device.LicenseCode = &licenseCode
-				var license License
 				if result := PGDB.Where("code = ?", licenseCode).First(&license); result.Error == nil {
 					// 查询到了
-					if !(license.ExpiresAt > time.Now().Unix() && license.UseCount < license.Count && strings.Contains(license.Permit, *device.SystemOUID)) {
+					var systemouid = ""
+					if device.SystemOUID != nil {
+						systemouid = *device.SystemOUID
+					}
+
+					if !(license.ExpiresAt > time.Now().Unix() && license.UseCount < license.Count && strings.Contains(license.Permit, systemouid)) {
 						c.JSON(200, gin.H{"errcode": 10104, "errmsg": "授权码无效，没有权限访问"})
 						return
 					}
@@ -132,7 +137,11 @@ func createDevice(c *gin.Context) {
 				device.PIN = fmt.Sprintf("%06v", rnd.Int31n(1000000))
 			}
 			if result := PGDB.Debug().Create(&device); result.Error == nil {
-				// 创建成功后，注册码-1
+				 // 创建成功后，注册码-1
+				if licenseCode != "" {
+					license.UseCount++
+					PGDB.Save(&license)
+				}
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device.OUID})
 			} else {
 				c.JSON(200, gin.H{"errcode": 10203, "errmsg": "创建数据错误"})

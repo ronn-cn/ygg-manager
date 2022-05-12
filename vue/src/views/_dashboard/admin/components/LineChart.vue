@@ -82,7 +82,7 @@ export default {
       this.chart = echarts.init(this.$el, 'macarons')
       this.setOptions(this.chartData)
     },
-    setOptions({ deviceTrend } = {}) {
+    setOptions({ deviceTrend, systemTrend, appTrend } = {}) {
       this.chart.setOption({
         xAxis: {
           data: getday2().reverse(),
@@ -111,7 +111,7 @@ export default {
           }
         },
         legend: {
-          data: ['设备']
+          data: ['设备','系统', '应用']
         },
         series: [{
           name: '设备', itemStyle: {
@@ -126,6 +126,38 @@ export default {
           smooth: true,
           type: 'line',
           data: deviceTrend,
+          animationDuration: 2800,
+          animationEasing: 'cubicInOut'
+        },
+        {
+          name: '系统', itemStyle: {
+            normal: {
+              color: '#36a3f7',
+              lineStyle: {
+                color: '#36a3f7',
+                width: 2
+              }
+            }
+          },
+          smooth: true,
+          type: 'line',
+          data: systemTrend,
+          animationDuration: 2800,
+          animationEasing: 'cubicInOut'
+        },
+        {
+          name: '应用', itemStyle: {
+            normal: {
+              color: '#f4516c',
+              lineStyle: {
+                color: '#f4516c',
+                width: 2
+              }
+            }
+          },
+          smooth: true,
+          type: 'line',
+          data: appTrend,
           animationDuration: 2800,
           animationEasing: 'cubicInOut'
         }]

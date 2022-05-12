@@ -30,7 +30,7 @@ func getSetting(c *gin.Context) {
 	// 查询账户权限
 	if account, err := VerifyToken(c); err == nil {
 		logger.Debugf("请求的账号信息:%v", account)
-		if account.TypeID == 1 {
+		if account.TypeID <= 2 {
 			var settings []Setting // 设置复数
 			PGDB.Find(&settings)
 			redata := make(map[string]interface{})
@@ -56,7 +56,7 @@ func saveSetting(c *gin.Context) {
 	// 查询账户权限
 	if account, err := VerifyToken(c); err == nil {
 		logger.Debugf("请求的账号信息:%v", account)
-		if account.TypeID == 1 {
+		if account.TypeID <= 2 {
 			if err := c.BindJSON(&Config); err == nil {
 				configToDB()   // 配置写入数据库
 				configToFile() // 配置写入配置文件
