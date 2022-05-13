@@ -84,7 +84,7 @@
         <template slot-scope="{ row }">
           <el-link class="el-dropdown-link" @click="handleAccountClick('look',row)"> 查看 </el-link>&nbsp;
           <el-link class="el-dropdown-link" @click="handleAccountClick('update', row)">编辑</el-link>&nbsp;
-          <el-link class="el-dropdown-link" v-if="info.type_id == 1 || row.type.id > 2" @click="deleteAccountData(row.ouid)">删除</el-link>
+          <el-link class="el-dropdown-link" v-if="info.account != row.account" @click="deleteAccountData(row.ouid)">删除</el-link>
         </template>
       </el-table-column>
     </el-table>
@@ -116,7 +116,7 @@
       </span>
     </el-dialog>
 
-    <!-- 账号的弹窗 -->
+    <!-- 账号的编辑弹窗 -->
     <el-dialog
       :title="dialogAccountTitle"
       :visible.sync="dialogAccountFormVisible"
@@ -131,7 +131,7 @@
         <el-form-item label="名称" prop="name">
           <el-input v-model="accountData.name" placeholder="请输入名称" />
         </el-form-item>
-        <el-form-item label="账号" prop="account">
+        <el-form-item v-if="user.info.type_id != accountData.type_id" label="账号" prop="account">
           <el-input v-model="accountData.account" placeholder="请输入账号" />
         </el-form-item>
         <el-form-item label="密码" prop="passwd" v-if="dialogAccountStatus=='create'">
@@ -141,7 +141,7 @@
             show-password
           />
         </el-form-item>
-        <el-form-item label="类型" prop="type_id">
+        <el-form-item  v-if="user.info.type_id != accountData.type_id" label="类型" prop="type_id">
           <el-select
             v-model="accountData.type_id"
             class="filter-item"
@@ -149,6 +149,21 @@
           >
             <el-option
               v-for="item in accountTypeOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+        </el-form-item>
+        
+        <el-form-item label="所属商户" prop="company_id">
+          <el-select
+            v-model="accountData.company_id"
+            class="filter-item"
+            placeholder="请选择所属商户"
+          >
+            <el-option
+              v-for="item in companyOptions"
               :key="item.value"
               :label="item.label"
               :value="item.value"
@@ -214,6 +229,7 @@
 <script>
 import { mapGetters } from "vuex";
 import { getAccountList, createAccount,updateAccount,deleteAccount } from "@/api/account";
+import { getCompanyList } from "@/api/company";
 import { sha256 } from "js-sha256";
 export default {
   name: "AccountTable",
@@ -238,6 +254,7 @@ export default {
         contact: "",
         detail: "",
         status: 1,
+        company_id: null 
       },
       accountLookData: {
         ouid: "",
@@ -281,7 +298,8 @@ export default {
       accountPasswdData: {
         ouid: "",
         passwd: "",
-      }
+      },
+      companyOptions: []
     };
   },
   computed: {
@@ -290,6 +308,7 @@ export default {
   created() {
     this.getList();
     this.getUserInfo();
+    this.getCompany();
   },
   methods: {
     async getList() {
@@ -320,6 +339,17 @@ export default {
         info: this.info,
         role: this.roles[0].name,
       };
+    },
+    async getCompany(){
+      const { data } = await getCompanyList(null);
+      console.log("商户列表：", data)
+      data.items.forEach((item,index)=>{
+        var opt  = {
+          value: item.id,
+          label: item.name,
+        };
+        this.companyOptions.push(opt);
+      })
     },
     tableRowClassName({ row, rowIndex }) {
       row.index = rowIndex;
@@ -363,6 +393,7 @@ export default {
         type_id: 4,
         contact: "",
         detail: "",
+        company_id: null,
       };
     },
     handleAccountClick(typ, data) {
@@ -459,6 +490,15 @@ export default {
       });
     },
     handleAccountStatusChange(data){
+      if(this.user.info.account == data.account){
+        this.getList()
+        this.$message({
+          message: "不能禁用自己的账号",
+          type: "warning",
+          duration: 2000,
+        });
+        return
+      }
       this.accountData = data;
       let tempData = Object.assign({}, this.accountData);
       tempData.status = tempData.status ? 1:0;

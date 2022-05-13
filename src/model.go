@@ -34,7 +34,7 @@ type Account struct {
 	Detail         string      `json:"detail" gorm:"column:detail"`                                  // 详细
 	Status         int         `json:"status" gorm:"column:status;NOT NULL"`                         // 账户状态，启用1 禁用0
 	Company        *Company    `json:"company" gorm:"ForeignKey:CompanyID;AssociationForeignKey:ID"` // 账户单位
-	CompanyID      int         `json:"company_id" gorm:"column:company;default:NULL"`                // 账户的单位id
+	CompanyID      *int        `json:"company_id" gorm:"column:company;default:NULL"`                // 账户的单位id
 	IP             string      `json:"-" gorm:"-"`
 }
 
@@ -89,11 +89,11 @@ type Device struct {
 	InstalledAt  *int64       `json:"installed_at" gorm:"column:installed_at"`                          // 安装时间
 	LastTime     *int64       `json:"last_time" gorm:"column:last_time"`                                // 最后登录时间
 	OwnerCompany *Company     `json:"owner" gorm:"ForeignKey:OwnerID;AssociationForeignKey:ID"`         // 所有者单位
-	OwnerID      *int64       `json:"owner_id" gorm:"column:owner"`                                     // 所有者ID
+	OwnerID      *int         `json:"owner_id" gorm:"column:owner"`                                     // 所有者ID
 	Remark       string       `json:"remark" gorm:"column:remark"`                                      // 备注
-	Manufacturer *int64       `json:"manufacturer" gorm:"column:manufacturer"`                          // 生产者
-	Distributor  *int64       `json:"distributor" gorm:"column:distributor"`                            // 销售者
-	Customer     *int64       `json:"customer" gorm:"column:customer"`                                  // 使用客户
+	Manufacturer *int         `json:"manufacturer" gorm:"column:manufacturer"`                          // 生产者
+	Distributor  *int         `json:"distributor" gorm:"column:distributor"`                            // 销售者
+	Customer     *int         `json:"customer" gorm:"column:customer"`                                  // 使用客户
 }
 
 func (Device) TableName() string {
@@ -205,7 +205,11 @@ func (Setting) TableName() string {
 type Record struct {
 	ID        int64  `json:"id" gorm:"column:id;primaryKey;NOT NULL"`            // 自增ID
 	Type      int    `json:"type" gorm:"column:type"`                            // 日志类型
-	Record    string `json:"record" gorm:"column:record"`                        // 日志记录
+	Info      string `json:"info" gorm:"column:info"`                            // 日志信息
+	Level     string `json:"level" gorm:"column:level"`                          // 等级
+	Action    string `json:"action" gorm:"column:action"`                        // 行为
+	OUID      string `json:"ouid" gorm:"column:ouid"`                            // 操作者
+	Relate    string `json:"relate" gorm:"column:relate"`                        // 相关
 	CreatedAt int64  `json:"created_at" gorm:"column:created_at;autoCreateTime"` // 创建时间
 }
 

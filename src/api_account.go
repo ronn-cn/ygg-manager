@@ -169,7 +169,7 @@ func updateAccount(c *gin.Context) {
 				c.JSON(200, gin.H{"errcode": 10204, "errmsg": "更新数据错误"})
 			}
 		} else {
-			if result := PGDB.Debug().Model(&Account{OUID: account.OUID}).Select("Name", "Account", "TypeID", "Contact", "Detail", "Status").Updates(&account); result.Error == nil {
+			if result := PGDB.Debug().Model(&Account{OUID: account.OUID}).Select("Name", "Account", "TypeID", "Contact", "Detail", "Status", "CompanyID").Updates(&account); result.Error == nil {
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": account})
 			} else {
 				c.JSON(200, gin.H{"errcode": 10204, "errmsg": "更新数据错误"})
@@ -248,6 +248,16 @@ func login(c *gin.Context) {
 				}
 				redata := make(map[string]interface{})
 				redata["token"] = jwthex
+
+				// 记录日志
+				var record Record
+				record.Type = 0 // 0表示账号 1表示设备
+				record.Level = "INFO"
+				record.Action = "登录"
+				record.OUID = account.Account
+				record.Info = account.Account + "账号登录成功"
+				record.Relate = account.OUID + fmt.Sprintf("companyid-%v", *account.CompanyID)
+				PGDB.Debug().Create(&record)
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": redata})
 			} else {
 				c.JSON(200, gin.H{"errcode": 10102, "errmsg": "密码错误"})

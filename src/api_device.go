@@ -95,8 +95,10 @@ func createDevice(c *gin.Context) {
 	}
 
 	if account, err := VerifyToken(c); err == nil {
-		fmt.Println(account)
-		if account.TypeID == 6 || account.TypeID == 7 {
+		// fmt.Println(account)
+		PGDB.First(&account)
+		fmt.Println("数据库查询了账户数据", account)
+		if account.TypeID == 6 || account.TypeID == 7 || account.Status == 0 {
 			c.JSON(200, gin.H{"errcode": 10104, "errmsg": "没有权限访问"})
 			return
 		}
@@ -136,8 +138,10 @@ func createDevice(c *gin.Context) {
 				rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 				device.PIN = fmt.Sprintf("%06v", rnd.Int31n(1000000))
 			}
+			device.OwnerID = account.CompanyID
+			device.Manufacturer = account.CompanyID
 			if result := PGDB.Debug().Create(&device); result.Error == nil {
-				 // 创建成功后，注册码-1
+				// 创建成功后，注册码-1
 				if licenseCode != "" {
 					license.UseCount++
 					PGDB.Save(&license)
