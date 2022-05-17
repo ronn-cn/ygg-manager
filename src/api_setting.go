@@ -28,7 +28,7 @@ func getSetting(c *gin.Context) {
 		return
 	}
 	// 查询账户权限
-	if account, err := VerifyToken(c); err == nil {
+	if account, err := VerifyTokenForAccount(c); err == nil {
 		logger.Debugf("请求的账号信息:%v", account)
 		if account.TypeID <= 2 {
 			var settings []Setting // 设置复数
@@ -54,7 +54,7 @@ func saveSetting(c *gin.Context) {
 	}
 
 	// 查询账户权限
-	if account, err := VerifyToken(c); err == nil {
+	if account, err := VerifyTokenForAccount(c); err == nil {
 		logger.Debugf("请求的账号信息:%v", account)
 		if account.TypeID <= 2 {
 			if err := c.BindJSON(&Config); err == nil {

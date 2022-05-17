@@ -20,7 +20,7 @@ func handleAccount(c *gin.Context, ps []string) {
 	}
 	switch ps[1] {
 	case "login":
-		login(c)
+		accountLogin(c)
 	case "logout":
 		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功"})
 		return
@@ -47,7 +47,7 @@ func getAccountList(c *gin.Context) {
 		c.Status(405)
 		return
 	}
-	if account, err := VerifyToken(c); err == nil {
+	if account, err := VerifyTokenForAccount(c); err == nil {
 		fmt.Println(account)
 		// TODO: 暂时设置为9，方便调用，正确改为2
 		if account.TypeID > 2 { // 不是管理员，没有权限访问
@@ -78,7 +78,7 @@ func getAccountInfo(c *gin.Context) {
 		c.Status(405) //请求中的方法被禁用
 		return
 	}
-	if account, err := VerifyToken(c); err == nil {
+	if account, err := VerifyTokenForAccount(c); err == nil {
 		PGDB.Where("account = ?", account.Account).First(&account)
 		if account.Status == 0 { // 禁用状态
 			c.JSON(200, gin.H{"errcode": 10101, "errmsg": "账号禁用状态", "data": nil})
@@ -95,7 +95,7 @@ func getAccountPermissions(c *gin.Context) {
 		c.Status(405)
 		return
 	}
-	if account, err := VerifyToken(c); err == nil {
+	if account, err := VerifyTokenForAccount(c); err == nil {
 		redata := make(map[string]interface{})
 		PGDB.Where("account = ?", account.Account).Preload("PermissionType").First(&account)
 		redata["id"] = account.PermissionType.ID
@@ -198,12 +198,12 @@ func deleteAccount(c *gin.Context) {
 	}
 }
 
-func login(c *gin.Context) {
+// 账号登录
+func accountLogin(c *gin.Context) {
 	if c.Request.Method != "POST" {
 		c.Status(405)
 		return
 	}
-	// TODO:还需要做登录日志记录
 	userParam := make(map[string]interface{})
 	if err := c.BindJSON(&userParam); err == nil {
 		accountStr, _ := userParam["account"].(string)
@@ -219,13 +219,13 @@ func login(c *gin.Context) {
 			passwd := passwdStr + "woshiyanzhi"   // 将提交的密码加上盐值（woshiyanzhi）后哈希对比
 			if account.Passwd == SHA256(passwd) { // 判断密码正确
 				othData := make(map[string]interface{})
+				othData["cert_type"] = "account"
 				othData["ouid"] = account.OUID
 				othData["account"] = accountStr
 				othData["name"] = account.Name
 				othData["type"] = account.TypeID
 				othData["ip"] = c.ClientIP()
 				othByte, _ := json.Marshal(othData)
-				fmt.Println(string(othByte))
 
 				jwtheader := ouid.JWTHeader{Typ: "proof", Alg: "hs256"}
 				aUnix := time.Now().Unix()

@@ -10,40 +10,76 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// 证明
+type Certification struct {
+	OUID        string
+	Name        string
+	IP          string
+	CertType    string
+	CertContent interface{}
+}
+
 // 验证签名
-func VerifyToken(c *gin.Context) (Account, error) {
-	var acc Account
+func VerifyToken(c *gin.Context) (Certification, error) {
+	var cert Certification
 	jwtoken := c.GetHeader("Authorization")
 	if jwtoken == "" {
-		return acc, errors.New("没有验证信息")
+		return cert, errors.New("没有验证信息")
 	} else {
 		authArr := strings.Split(jwtoken, " ")
 		if len(authArr) != 2 || authArr[0] != "hexjwt" {
-			return acc, errors.New("验证信息格式不正确")
+			return cert, errors.New("验证信息格式不正确")
 		}
 		// 读取jwt
 		if jwtok, err := ouid.VerifyJWT(authArr[1], Config.PriKey); jwtok && err == nil {
 			if jwtObj, err := ouid.ParseJWT(authArr[1]); err == nil {
 				playload := jwtObj.Playload.(ouid.JWTProof)
-				accMap := make(map[string]interface{})
-				if err := json.Unmarshal([]byte(playload.Oth), &accMap); err == nil {
-					acc.OUID, _ = accMap["ouid"].(string)
-					acc.Account, _ = accMap["account"].(string)
-					acc.Name, _ = accMap["name"].(string)
-					typeid, _ := accMap["type"].(float64)
-					acc.TypeID = int(typeid)
-					acc.IP, _ = accMap["ip"].(string)
-					// logger.Debugf("%v", acc)
-					return acc, nil
+				certMap := make(map[string]interface{})
+				if err := json.Unmarshal([]byte(playload.Oth), &certMap); err == nil {
+					certType, _ := certMap["cert_type"].(string)
+					cert.CertType = certType
+					cert.OUID, _ = certMap["ouid"].(string)
+					cert.Name, _ = certMap["name"].(string)
+					cert.IP, _ = certMap["ip"].(string)
+
+					switch certType {
+					case "account":
+						var acc Account
+						acc.OUID, _ = certMap["ouid"].(string)
+						acc.Account, _ = certMap["account"].(string)
+						acc.Name, _ = certMap["name"].(string)
+						typeid, _ := certMap["type"].(float64)
+						acc.TypeID = int(typeid)
+						acc.IP, _ = certMap["ip"].(string)
+						cert.CertContent = acc
+					case "device":
+					}
+
+					return cert, nil
 				} else {
-					return acc, err
+					return cert, err
 				}
 			} else {
-				return acc, err
+				return cert, err
 			}
 		} else {
-			return acc, err
+			return cert, err
 		}
+	}
+}
+
+// 验证账户的令牌
+func VerifyTokenForAccount(c *gin.Context) (Account, error) {
+	var acc Account
+	if cert, err := VerifyToken(c); err == nil {
+		if cert.CertType == "account" {
+			acc = cert.CertContent.(Account)
+		} else {
+			err = errors.New("不是账号类型的验证信息")
+		}
+		return acc, err
+	} else {
+		return acc, err
 	}
 }
 
