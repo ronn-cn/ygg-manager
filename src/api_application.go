@@ -16,6 +16,10 @@ func handleApplication(c *gin.Context, ps []string) {
 	switch ps[1] {
 	case "get-application-list":
 		getApplicationList(c)
+	case "query-application":
+		queryApplication(c)
+	case "query-application-version":
+		queryApplicationVersion(c)
 	case "create-application":
 		createApplication(c)
 	case "update-application":
@@ -60,6 +64,52 @@ func getApplicationList(c *gin.Context) {
 		}
 	} else {
 		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+	}
+}
+
+// 查询应用
+func queryApplication(c *gin.Context) {
+	if c.Request.Method != "GET" {
+		c.Status(405)
+		return
+	}
+
+	appidstr := c.Query("appid")
+	// 只要验证信息通过就能查询
+	if _, err := VerifyToken(c); err == nil {
+		var app Application
+		if result := PGDB.Debug().Where("appid = ?", appidstr).First(&app); result.Error == nil {
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": app})
+			return
+		} else {
+			c.JSON(200, gin.H{"errcode": 10201, "errmsg": "数据错误", "data": nil})
+			return
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		return
+	}
+}
+
+func queryApplicationVersion(c *gin.Context) {
+	if c.Request.Method != "GET" {
+		c.Status(405)
+		return
+	}
+
+	appidstr := c.Query("appid")
+	if _, err := VerifyToken(c); err == nil {
+		var versions []Version
+		if result := PGDB.Debug().Order("id").Where("appid = ?", appidstr).Find(&versions); result.Error == nil {
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(versions), "items": versions}})
+			return
+		} else {
+			c.JSON(200, gin.H{"errcode": 10200, "errmsg": "查询数据错误"})
+			return
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		return
 	}
 }
 

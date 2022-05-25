@@ -25,6 +25,8 @@ func handleDevice(c *gin.Context, ps []string) {
 		getDeviceList(c)
 	case "query-device":
 		queryDevice(c)
+	case "query-device-system":
+		queryDeviceSystem(c)
 	case "create-device":
 		createDevice(c)
 	case "update-device":
@@ -33,8 +35,12 @@ func handleDevice(c *gin.Context, ps []string) {
 		deleteDevice(c)
 	case "push-update":
 		pushUpdateToDevice(c)
+	case "generate-jwt":
+		generatejwt(c)
+	case "verify-jwt":
+		verifyjwt(c)
 	case "login":
-		deviceLogin(c)
+	case "logout":
 	default:
 		c.Status(404)
 		return
@@ -100,7 +106,7 @@ func queryDevice(c *gin.Context) {
 	}
 
 	ouidstr := c.Query("ouid")
-	// 只要验证信息通过就能查询设备信息？
+	// 只要验证信息通过就能查询设备信息？,不是
 	if cert, err := VerifyToken(c); err == nil {
 		if cert.CertType == "account" {
 			// acc, _ := cert.CertContent.(Account)
@@ -118,12 +124,87 @@ func queryDevice(c *gin.Context) {
 		}
 
 		var device Device
-		if result := PGDB.Debug().Where("ouid = ?", ouidstr).First(&device); result.Error == nil {
+		if result := PGDB.Debug().Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("ouid = ?", ouidstr).First(&device); result.Error == nil {
 			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device})
+			return
+		} else {
+			c.JSON(200, gin.H{"errcode": 10201, "errmsg": "数据错误", "data": nil})
 			return
 		}
 	} else {
 		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		return
+	}
+}
+
+func queryDeviceSystem(c *gin.Context) {
+	if c.Request.Method != "GET" {
+		c.Status(405)
+		return
+	}
+
+	ouidstr := c.Query("ouid")
+	if _, err := VerifyToken(c); err == nil {
+		var device Device
+		if result := PGDB.Debug().Preload("System").Where("ouid = ?", ouidstr).First(&device); result.Error == nil {
+
+			applist := make([]map[string]interface{}, 0)
+			appliststr := "" // 这个是加入到applist的appid字符串组合
+			logger.Debugf("设备信息:%v", device)
+			listStr := ""
+			if device.System != nil {
+				listStr = device.System.List
+			}
+		LOOP:
+			appArray := strings.Split(listStr, ",")
+			listStr = ""
+			content := make(map[string]string)
+			for i := 0; i < len(appArray); i++ {
+				if !strings.Contains(appliststr, appArray[i]) {
+					var app Application
+					if result := PGDB.Where("appid = ?", appArray[i]).First(&app); result.Error == nil {
+						appMap := make(map[string]interface{})
+						appMap["app_id"] = app.Appid
+						appMap["app_name"] = app.Name
+						appMap["app_type"] = app.Type
+						appMap["app_latest"] = app.Latest
+						appMap["app_depend"] = app.Depend
+						appMap["app_status"] = app.Status
+						appMap["app_remark"] = app.Remark
+						content[app.Appid] = app.Latest
+						applist = append(applist, appMap)
+						appliststr += appArray[i] + ","
+						if app.Depend != "" {
+							listStr += app.Depend + ","
+						}
+					}
+				}
+			}
+			if listStr != "" {
+				goto LOOP
+			}
+			if device.System != nil {
+				// 只显示设备系统
+				data := make(map[string]interface{})
+				data["system_ouid"] = device.System.OUID
+				data["system_name"] = device.System.Name
+				data["system_content"] = content
+				data["system_applist"] = applist
+				data["system_main"] = device.System.Main
+				data["system_status"] = device.System.Status
+				data["system_remark"] = device.System.Remark
+				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": data})
+			} else {
+				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": ""})
+			}
+			return
+		} else {
+			c.JSON(200, gin.H{"errcode": 10201, "errmsg": "数据错误", "data": nil})
+			return
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		return
 	}
 }
 
@@ -252,8 +333,8 @@ func pushUpdateToDevice(c *gin.Context) {
 	// 调用YGG接口
 }
 
-// 设备登录
-func deviceLogin(c *gin.Context) {
+// 生成JWT
+func generatejwt(c *gin.Context) {
 	if c.Request.Method != "POST" {
 		c.Status(405)
 		return
@@ -295,22 +376,6 @@ func deviceLogin(c *gin.Context) {
 				}
 				redata := make(map[string]interface{})
 				redata["token"] = jwthex
-
-				// 记录日志
-				var record Record
-				record.Type = 1 // 0表示账号 1表示设备
-				record.Level = "INFO"
-				record.Action = "登录"
-				record.OUID = device.OUID
-				record.Info = device.OUID + "设备登录成功"
-				record.Relate = device.OUID
-				if device.OwnerID != nil {
-					record.Relate += fmt.Sprintf("companyid-%v", *device.OwnerID)
-				}
-				if device.Manufacturer != nil {
-					record.Relate += fmt.Sprintf("companyid-%v", *device.Manufacturer)
-				}
-				PGDB.Debug().Create(&record)
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": redata})
 			} else {
 				// 验证不通过
@@ -320,6 +385,26 @@ func deviceLogin(c *gin.Context) {
 		} else {
 			// 请求数据错误
 			c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求数据错误"})
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
+	}
+}
+
+func verifyjwt(c *gin.Context) {
+	if c.Request.Method != "POST" {
+		c.Status(405)
+		return
+	}
+
+	userParam := make(map[string]interface{})
+	if err := c.BindJSON(&userParam); err == nil {
+		tokenStr, _ := userParam["token"].(string)
+		// 读取jwt
+		if jwtok, err := ouid.VerifyJWT(tokenStr, Config.PriKey); jwtok && err == nil {
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "验证密钥成功", "data": 1})
+		} else {
+			c.JSON(200, gin.H{"errcode": 10107, "errmsg": "验证密钥失败"})
 		}
 	} else {
 		c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})

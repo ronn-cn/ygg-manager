@@ -37,8 +37,7 @@ func getSystemList(c *gin.Context) {
 		c.Status(405)
 		return
 	}
-	if account, err := VerifyToken(c); err == nil {
-		logger.Debugf("请求的账号信息:%v", account)
+	if _, err := VerifyToken(c); err == nil {
 		namestr := c.Query("name")
 		var systems []System
 
@@ -62,13 +61,17 @@ func querySystem(c *gin.Context) {
 		c.Status(405)
 		return
 	}
-	if account, err := VerifyToken(c); err == nil {
-		logger.Debugf("请求的账号信息:%v", account)
+	if _, err := VerifyToken(c); err == nil {
 		ouidstr := c.Query("ouid")
+
+		if ouidstr == "" {
+			c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
+			return
+		}
 
 		var system System
 		if result := PGDB.Where("ouid = ?", ouidstr).Find(&system); result.Error == nil {
-			// c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(systems), "items": systems}})
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": system})
 		} else {
 			c.JSON(200, gin.H{"errcode": 10200, "errmsg": "查询数据错误"})
 		}

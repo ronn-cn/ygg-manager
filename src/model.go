@@ -74,26 +74,26 @@ func (Permission) TableName() string {
 
 type Device struct {
 	Model
-	OUID         string       `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`                      // 统一标识
-	Name         string       `json:"name" gorm:"column:name"`                                          // 设备名称
-	PIN          string       `json:"pin" gorm:"column:pin"`                                            // 设备PIN码
-	System       *System      `json:"system" gorm:"ForeignKey:SystemOUID;AssociationForeignKey:OUID"`   // 设备系统
-	SystemOUID   *string      `json:"system_ouid" gorm:"column:system"`                                 // 设备系统OUID
-	DeviceStatus DeviceStatus `json:"status" gorm:"ForeignKey:StatusID;AssociationForeignKey:ID"`       // 设备系统
-	StatusID     *int         `json:"status_id" gorm:"column:status"`                                   // 设备状态
-	License      *License     `json:"license" gorm:"ForeignKey:LicenseCode;AssociationForeignKey:Code"` // 注册信息
-	LicenseCode  *string      `json:"license_code" gorm:"column:license"`                               // 注册授权码
-	ProductJson  string       `json:"product_json" gorm:"column:product_json"`                          // 产品信息
-	InstallJson  string       `json:"install_json" gorm:"column:install_json"`                          // 安装信息
-	SoldTime     *int64       `json:"sold_time" gorm:"column:sold_time"`                                // 出售时间
-	InstalledAt  *int64       `json:"installed_at" gorm:"column:installed_at"`                          // 安装时间
-	LastTime     *int64       `json:"last_time" gorm:"column:last_time"`                                // 最后登录时间
-	OwnerCompany *Company     `json:"owner" gorm:"ForeignKey:OwnerID;AssociationForeignKey:ID"`         // 所有者单位
-	OwnerID      *int         `json:"owner_id" gorm:"column:owner"`                                     // 所有者ID
-	Remark       string       `json:"remark" gorm:"column:remark"`                                      // 备注
-	Manufacturer *int         `json:"manufacturer" gorm:"column:manufacturer"`                          // 生产者
-	Distributor  *int         `json:"distributor" gorm:"column:distributor"`                            // 销售者
-	Customer     *int         `json:"customer" gorm:"column:customer"`                                  // 使用客户
+	OUID         string        `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`                      // 统一标识
+	Name         string        `json:"name" gorm:"column:name"`                                          // 设备名称
+	PIN          string        `json:"pin" gorm:"column:pin"`                                            // 设备PIN码
+	System       *System       `json:"system" gorm:"ForeignKey:SystemOUID;AssociationForeignKey:OUID"`   // 设备系统
+	SystemOUID   *string       `json:"system_ouid" gorm:"column:system"`                                 // 设备系统OUID
+	DeviceStatus *DeviceStatus `json:"status" gorm:"ForeignKey:StatusID;AssociationForeignKey:ID"`       // 设备系统
+	StatusID     *int          `json:"status_id" gorm:"column:status"`                                   // 设备状态
+	License      *License      `json:"license" gorm:"ForeignKey:LicenseCode;AssociationForeignKey:Code"` // 注册信息
+	LicenseCode  *string       `json:"license_code" gorm:"column:license"`                               // 注册授权码
+	ProductJson  string        `json:"product_json" gorm:"column:product_json"`                          // 产品信息
+	InstallJson  string        `json:"install_json" gorm:"column:install_json"`                          // 安装信息
+	SoldTime     *int64        `json:"sold_time" gorm:"column:sold_time"`                                // 出售时间
+	InstalledAt  *int64        `json:"installed_at" gorm:"column:installed_at"`                          // 安装时间
+	LastTime     *int64        `json:"last_time" gorm:"column:last_time"`                                // 最后登录时间
+	OwnerCompany *Company      `json:"owner" gorm:"ForeignKey:OwnerID;AssociationForeignKey:ID"`         // 所有者单位
+	OwnerID      *int          `json:"owner_id" gorm:"column:owner"`                                     // 所有者ID
+	Remark       string        `json:"remark" gorm:"column:remark"`                                      // 备注
+	Manufacturer *int          `json:"manufacturer" gorm:"column:manufacturer"`                          // 生产者
+	Distributor  *int          `json:"distributor" gorm:"column:distributor"`                            // 销售者
+	Customer     *int          `json:"customer" gorm:"column:customer"`                                  // 使用客户
 }
 
 func (Device) TableName() string {
@@ -177,15 +177,15 @@ func (Application) TableName() string {
 }
 
 type Version struct {
-	ID             int64   `json:"id" gorm:"column:id;primaryKey;NOT NULL"`                        // 自增ID
-	Version        string  `json:"version" gorm:"column:version"`                                  // 版本号
-	Appid          string  `json:"appid" gorm:"column:appid"`                                      // 应用id
-	Method         int     `json:"method" gorm:"column:method"`                                    // 更新方式
-	Description    string  `json:"description" gorm:"column:description"`                          // 版本简介
-	CreatedAt      int64   `json:"created_at" gorm:"column:created_at;autoCreateTime"`             // 创建时间
-	From           string  `json:"from" gorm:"column:from"`                                        // 来自台主机上传
-	CreatorAccount Account `json:"creator" gorm:"ForeignKey:CreatorID;AssociationForeignKey:OUID"` // 创建者
-	CreatorID      string  `json:"creator_id" gorm:"column:creator"`                               // 创建者ID
+	ID             int64    `json:"id" gorm:"column:id;primaryKey;default:NULL"`                    // 自增ID
+	Version        string   `json:"version" gorm:"column:version"`                                  // 版本号
+	Appid          string   `json:"appid" gorm:"column:appid"`                                      // 应用id
+	Method         int      `json:"method" gorm:"column:method"`                                    // 更新方式
+	Description    string   `json:"description" gorm:"column:description"`                          // 版本简介
+	CreatedAt      int64    `json:"created_at" gorm:"column:created_at;autoCreateTime"`             // 创建时间
+	From           string   `json:"from" gorm:"column:from"`                                        // 来自台主机上传
+	CreatorAccount *Account `json:"creator" gorm:"ForeignKey:CreatorID;AssociationForeignKey:OUID"` // 创建者
+	CreatorID      *string  `json:"creator_id" gorm:"column:creator;default:NULL"`                  // 创建者ID
 }
 
 func (Version) TableName() string {

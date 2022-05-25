@@ -9,6 +9,15 @@ export function getApplicationList(query) {
   })
 }
 
+// 查询应用版本
+export function queryApplicationVersion(query) {
+  return request({
+    url: '/application/query-application-version',
+    method: 'get',
+    params: query
+  })
+}
+
 // 创建应用
 export function createApplication(data) {
   return request({

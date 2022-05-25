@@ -83,6 +83,8 @@ func VerifyTokenForAccount(c *gin.Context) (Account, error) {
 	}
 }
 
+// TODO:验证设备的令牌
+
 // 处理管理API
 func handleManagerApi(c *gin.Context) {
 	path := c.Param("path")
@@ -98,6 +100,8 @@ func handleManagerApi(c *gin.Context) {
 		handleSystem(c, ps)
 	case "application":
 		handleApplication(c, ps)
+	case "version":
+		handleVersion(c, ps)
 	case "license":
 		handleLicense(c, ps)
 	case "company":
@@ -217,25 +221,5 @@ func handleDashboard(c *gin.Context, ps []string) {
 		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": reData})
 	default:
 		c.Status(404)
-	}
-}
-
-func handleRecord(c *gin.Context, ps []string) {
-	if len(ps) < 1 {
-		c.Status(404)
-		return
-	}
-	switch ps[1] {
-	case "get-record-list": // 查询应用列表
-		if c.Request.Method != "GET" {
-			c.Status(405)
-			return
-		}
-		var records []Record // 日志复数
-		PGDB.Find(&records)
-		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(records), "items": records}})
-	default:
-		c.Status(404)
-		return
 	}
 }

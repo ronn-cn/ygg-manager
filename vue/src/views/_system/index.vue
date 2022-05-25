@@ -64,7 +64,7 @@
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
 
     <!-- 系统新建与编辑弹窗 -->
-    <el-dialog :title="dialogSystemFormTitle" :visible.sync="dialogSystemFormVisible" :close-on-click-modal="false">
+    <el-dialog :title="dialogSystemFormTitle" :visible.sync="dialogSystemFormVisible" :close-on-click-modal="false" width="65%">
       <el-form ref="systemData" :model="systemData" label-position="left" label-width="70px">
         <el-form-item label="OUID" prop="ouid">
           <el-input v-model="systemData.ouid" placeholder="不填写，默认自动生成OUID" />
@@ -72,7 +72,7 @@
         <el-form-item label="名称" prop="name">
           <el-input v-model="systemData.name" placeholder="请输入系统名称"/>
         </el-form-item>
-        <el-form-item label="应用集合" prop="list">
+        <!-- <el-form-item label="应用集合" prop="list">
           <el-cascader
             placeholder="试试搜索：**应用"
             v-model="systemData.listarr"
@@ -93,18 +93,39 @@
               :value="item.value">
             </el-option>
           </el-select>
-        </el-form-item>
+        </el-form-item> -->
         <el-form-item label="备注">
           <el-input v-model="systemData.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="请填写备注信息" />
         </el-form-item>
+        <el-form-item label="选择应用">
+          <el-input style="width: 200px;" v-model="appsearch" size="mini" placeholder="输入关键字搜索"/>
+          <el-table
+            ref="multipleTable"
+            :data="appList"
+            border
+            height="300"
+            tooltip-effect="dark"
+            style="width: 100%"
+            selection-change="">
+            <el-table-column type="selection" width="55"></el-table-column>
+            <el-table-column prop="name" label="应用名称" show-overflow-tooltip></el-table-column>
+            <el-table-column prop="appid" label="应用ID" show-overflow-tooltip></el-table-column>
+            <el-table-column label="选择版本">
+              <template slot-scope="{row}">
+                <el-select v-model="row.latest" placeholder="选择版本">
+                  <el-option v-for="item in row.versions" :key="item" :label="item" :value="item"></el-option>
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column prop="" label="开机启动" width="120">
+              <el-switch></el-switch>
+            </el-table-column>
+          </el-table>
+        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogSystemFormVisible = false">
-          取消
-        </el-button>
-        <el-button type="primary" @click="dialogSystemFormStatus==='create'?createSystemData():updateSystemData()">
-          提交
-        </el-button>
+        <el-button @click="dialogSystemFormVisible = false">取消</el-button>
+        <el-button type="primary" @click="dialogSystemFormStatus==='create'?createSystemData():updateSystemData()">提交</el-button>
       </div>
     </el-dialog>
 
@@ -167,7 +188,7 @@
 <script>
 import { mapGetters } from "vuex";
 import { getSystemList,createSystem,updateSystem,deleteSystem } from '@/api/system'
-import { getApplicationList } from '@/api/application'
+import { getApplicationList, queryApplicationVersion } from '@/api/application'
 import waves from '@/directive/waves' // waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
@@ -185,6 +206,7 @@ export default {
     return {
       list: [],
       appList: [],
+      appsearch: undefined,
       total: 0,
       listLoading: true,
       listQuery: {
@@ -226,7 +248,20 @@ export default {
     },
     getAppList(){
       getApplicationList().then(response => {
-        this.appList = response.data.items
+        this.appList = response.data.items 
+        for (let i = 0; i < this.appList.length; i++){
+          let versionOptions = []
+          queryApplicationVersion({"appid":this.appList[i].appid}).then(response => {
+            var appversion = response.data.items
+            console.log(appversion)
+            let len = appversion.length>10?10:appversion.length
+            versionOptions.push("latest")
+            for (let j = 0; j < len; j++){
+                versionOptions.push(appversion[j].version)
+            }
+            this.appList[i].versions = versionOptions
+          })
+        }
       })
     },
     optionsAppData(){
@@ -241,6 +276,23 @@ export default {
       }
       // this.systemDataListChange()
       return appOptions
+    },
+    async returnAppVersionOptions(appid){
+      let versionOptions = []
+      await queryApplicationVersion({"appid":appid}).then(response => {
+        var appversion = response.data.items
+        for (let i = 0; i < appversion.length; i++){
+            let item = {
+              value: appversion[i].version,
+              label: appversion[i].version,
+            }
+            versionOptions.push(item)
+        } 
+        console.log("2",versionOptions)
+      })
+    
+      console.log("1",versionOptions)
+      return versionOptions
     },
     // 系统的应用列表数据改变时操作的函数
     systemDataListChange(){
