@@ -18,7 +18,7 @@
           <span>{{ row.index }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="系统名称" min-width="150">
+      <el-table-column label="系统名称" min-width="150" show-overflow-tooltip>
         <template slot-scope="{row}">
           <span>{{ row.name }}</span> 
           <el-tag style="margin-left:5px;" v-if="row.status == 0" size="mini" type="info" effect="dark">开发</el-tag>
@@ -29,21 +29,12 @@
           <span>{{ row.ouid }}</span>
         </template>
       </el-table-column>
-      <!-- type="expand" -->
-      <el-table-column label="应用列表" min-width="110">  
+      <el-table-column label="应用列表" min-width="110" show-overflow-tooltip>  
         <template slot-scope="{row}">
-          <!-- <span>{{ row.list }}</span> -->
-          <div v-for="app in row.listarr" :key="app">
-            <el-tag style="margin:2px 0" size="small" v-if="app!=''">{{app}}</el-tag>
-          </div>
+            <!-- <el-tag style="margin:5px" v-for="app in row.listarr" size="small" :key="app.appid">{{"[ "+app.name+" ]"}}</el-tag> -->
+            <el-tag style="margin:5px" v-for="name in returnAppNames(row.list)" size="small" :key="name">{{"[ "+name+" ]"}}</el-tag>
         </template>
       </el-table-column>
-      <!-- <el-table-column label="主应用" min-width="110">
-        <template slot-scope="{row}">
-          <span>{{ row.main }}</span>
-        </template>
-      </el-table-column> -->
-      <!-- <el-table-column label="创建时间" align="center" sortable prop="created_at" :formatter="formatTime"></el-table-column> -->
       <el-table-column label="更新时间" align="center" sortable prop="updated_at" :formatter="formatTime"></el-table-column>
       <el-table-column label="操作" align="center" fixed="right" width="150" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
@@ -72,53 +63,36 @@
         <el-form-item label="名称" prop="name">
           <el-input v-model="systemData.name" placeholder="请输入系统名称"/>
         </el-form-item>
-        <!-- <el-form-item label="应用集合" prop="list">
-          <el-cascader
-            placeholder="试试搜索：**应用"
-            v-model="systemData.listarr"
-            :options="optionsAppData()"
-            :props="{ multiple: true }"
-            filterable
-            clearable
-            @change="systemDataListChange"
-            >
-          </el-cascader>
-        </el-form-item>
-        <el-form-item label="主应用" prop="main">
-          <el-select v-model="systemData.main" placeholder="请选择">
-            <el-option
-              v-for="item in systemData.mainOptionArr"
-              :key="item.label"
-              :label="item.label"
-              :value="item.value">
-            </el-option>
-          </el-select>
-        </el-form-item> -->
         <el-form-item label="备注">
           <el-input v-model="systemData.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="请填写备注信息" />
         </el-form-item>
         <el-form-item label="选择应用">
-          <el-input style="width: 200px;" v-model="appsearch" size="mini" placeholder="输入关键字搜索"/>
+          <!-- TODO:等应用特别多的时候需要添加上搜索功能 2.还需要添加一栏显示视图、程序等应用类型-->
+          <!-- <el-input style="width: 200px;" v-model="appSearch" size="mini" placeholder="输入关键字搜索"/> -->
           <el-table
             ref="multipleTable"
-            :data="appList"
+            :data="activeAppList"
             border
             height="300"
             tooltip-effect="dark"
             style="width: 100%"
-            selection-change="">
+            @select="selectItem"
+            @select-all="selectAll"
+            @selection-change="selectionApplistChanged">
             <el-table-column type="selection" width="55"></el-table-column>
             <el-table-column prop="name" label="应用名称" show-overflow-tooltip></el-table-column>
             <el-table-column prop="appid" label="应用ID" show-overflow-tooltip></el-table-column>
             <el-table-column label="选择版本">
               <template slot-scope="{row}">
-                <el-select v-model="row.latest" placeholder="选择版本">
-                  <el-option v-for="item in row.versions" :key="item" :label="item" :value="item"></el-option>
+                <el-select v-model="row.version" placeholder="选择版本" :disabled="row.disabled">
+                  <el-option v-for="item in row.versionOptions" :key="item" :label="item" :value="item"></el-option>
                 </el-select>
               </template>
             </el-table-column>
             <el-table-column prop="" label="开机启动" width="120">
-              <el-switch></el-switch>
+              <template slot-scope="{row}">
+                <el-switch :value="row.appid==systemData.main?true:false" :disabled="row.disabled" @change="switchChange(row)"></el-switch>
+              </template>
             </el-table-column>
           </el-table>
         </el-form-item>
@@ -205,8 +179,10 @@ export default {
   data() {
     return {
       list: [],
-      appList: [],
-      appsearch: undefined,
+      appList: [],  //这是一个全局
+      activeAppList: [],
+      multipleAppList: [],
+      appSearch: undefined,
       total: 0,
       listLoading: true,
       listQuery: {
@@ -219,8 +195,6 @@ export default {
         name: '',
         list: '',
         listarr: [],
-        applist: [],
-        mainOptionArr:[],
         main: '',
         remark: '',
         status: 1,
@@ -246,37 +220,31 @@ export default {
         this.listLoading = false
       })
     },
+    // 获取所有应用数据
     getAppList(){
       getApplicationList().then(response => {
         this.appList = response.data.items 
         for (let i = 0; i < this.appList.length; i++){
-          let versionOptions = []
+          let item = {
+            appid: this.appList[i].appid,
+            name: this.appList[i].name,
+            version: "latest",
+            type: this.appList[i].type,
+            disabled: true,
+            versionOptions: ["latest"],
+          }
           queryApplicationVersion({"appid":this.appList[i].appid}).then(response => {
             var appversion = response.data.items
-            console.log(appversion)
             let len = appversion.length>10?10:appversion.length
-            versionOptions.push("latest")
             for (let j = 0; j < len; j++){
-                versionOptions.push(appversion[j].version)
+                item.versionOptions.push(appversion[j].version)
             }
-            this.appList[i].versions = versionOptions
+            this.activeAppList.push(item)   // 生成提供给应用表格的数据源
           })
         }
       })
     },
-    optionsAppData(){
-      let appOptions = []
-      console.log(this.appList)
-      for (let i = 0; i < this.appList.length; i++){
-          let item = {
-            value: this.appList[i].appid,
-            label: this.appList[i].name+"["+this.appList[i].appid+"]",
-          }
-          appOptions.push(item)
-      }
-      // this.systemDataListChange()
-      return appOptions
-    },
+    // 返回应用版本的选项
     async returnAppVersionOptions(appid){
       let versionOptions = []
       await queryApplicationVersion({"appid":appid}).then(response => {
@@ -288,37 +256,46 @@ export default {
             }
             versionOptions.push(item)
         } 
-        console.log("2",versionOptions)
       })
-    
-      console.log("1",versionOptions)
       return versionOptions
     },
-    // 系统的应用列表数据改变时操作的函数
-    systemDataListChange(){
-      console.log("systemDataListChange:",this.systemData.mainOptionArr)
-      if(this.systemData.mainOptionArr){
-        this.systemData.mainOptionArr.length = 0;
-      } else {
-        this.systemData.mainOptionArr = [];
-      }
-      this.systemData.list = this.systemData.listarr.toString()
-      if(!this.systemData.list.includes(this.systemData.main)){
-        this.systemData.main = "";
-      }
-      for (var i = 0; i < this.appList.length; i++){
-        if(this.systemData.list.includes(this.appList[i].appid)){
-          let opt = {
-            label: this.appList[i].name,
-            value: this.appList[i].appid,
-          }
-          this.systemData.mainOptionArr.push(opt)
+    selectionApplistChanged(val){
+      this.multipleAppList = val;
+    },
+    selectItem(item,row){
+      console.log(item,row)
+      row.disabled = !row.disabled
+    },
+    selectAll(item){
+      if (item.length > 0){ // 说明是全选
+        for (let i = 0; i < this.activeAppList.length; i++){
+          this.activeAppList[i].disabled = false
         }
+      } else {   // 否则是取消全选
+        for (let i = 0; i < this.activeAppList.length; i++){
+          this.activeAppList[i].disabled = true
+        }
+      }
+    },
+    switchChange(row){
+      if (this.systemData.main == row.appid){
+        this.systemData.main = "";
+      } else {
+        this.systemData.main = row.appid;
       }
     },
     tableRowClassName({row,rowIndex}){
       row.index = rowIndex;
-      row.listarr =  row.list.split(",");
+      row.listarr = JSON.parse(row.list);
+    },
+    returnAppNames(list){
+      let appnames = []
+      for (let i = 0; i < this.activeAppList.length; i++){
+        if (list.includes(this.activeAppList[i].appid)){
+          appnames.push(this.activeAppList[i].name);
+        }
+      }
+      return appnames;
     },
     // 格式化时间
     formatTime(row, column) {
@@ -341,8 +318,6 @@ export default {
         name: '',
         list: '',
         listarr: [],
-        applist: [],
-        mainOptionArr:[],
         main: '',
         remark: '',
         status: 1,
@@ -367,8 +342,25 @@ export default {
           this.systemData.list = data.list
           this.systemData.main = data.main
           this.systemData.remark = data.remark
-          this.systemData.listarr = data.list.split(",")
-          this.systemDataListChange()
+          this.systemData.listarr = JSON.parse(data.list)
+
+          // this.systemDataListChange()
+          setTimeout(() => {
+            if (this.systemData.listarr) {
+              this.systemData.listarr.forEach(item => {
+                for(let i = 0; i < this.activeAppList.length; i++){
+                  if(this.activeAppList[i].appid == item.appid){
+                    console.log(this.activeAppList[i])
+                    this.activeAppList[i].disabled = false
+                    this.activeAppList[i].version = item.version
+                    this.$refs.multipleTable.toggleRowSelection(this.activeAppList[i],true);
+                  }
+                }
+              });
+            } else {
+              this.$refs.multipleTable.clearSelection();
+            }
+          }, 300);
           this.dialogSystemFormVisible = true
           break;
         case 'look':
@@ -394,6 +386,15 @@ export default {
       }
     },
     createSystemData() {
+      this.systemData.listarr = [];
+      for (let i = 0; i < this.multipleAppList.length; i++){
+        let item = {
+          appid: this.multipleAppList[i].appid,
+          version: this.multipleAppList[i].version,
+        }
+        this.systemData.listarr.push(item)
+      }
+      this.systemData.list = JSON.stringify(this.systemData.listarr)
       this.$refs['systemData'].validate((valid) => {
         if (valid) {
           createSystem(this.systemData).then(() => {
@@ -409,6 +410,16 @@ export default {
       })
     },
     updateSystemData() {
+      this.systemData.listarr = [];
+      for (let i = 0; i < this.multipleAppList.length; i++){
+        let item = {
+          appid: this.multipleAppList[i].appid,
+          version: this.multipleAppList[i].version,
+        }
+        this.systemData.listarr.push(item)
+      }
+      this.systemData.list = JSON.stringify(this.systemData.listarr)
+
       this.$refs['systemData'].validate((valid) => {
         if (valid) {
           const tempData = Object.assign({}, this.systemData)

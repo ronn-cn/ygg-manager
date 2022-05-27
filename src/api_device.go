@@ -149,51 +149,84 @@ func queryDeviceSystem(c *gin.Context) {
 		if result := PGDB.Debug().Preload("System").Where("ouid = ?", ouidstr).First(&device); result.Error == nil {
 
 			applist := make([]map[string]interface{}, 0)
-			appliststr := "" // 这个是加入到applist的appid字符串组合
+			appliststr := "" // 这个是已经加入到applist的appid字符串组合
 			logger.Debugf("设备信息:%v", device)
-			listStr := ""
+			listStr := ""   // 系统应用列表字符串
+			dependStr := "" // 依赖列表字符串
 			if device.System != nil {
 				listStr = device.System.List
 			}
-		LOOP:
-			appArray := strings.Split(listStr, ",")
-			listStr = ""
-			content := make(map[string]string)
-			for i := 0; i < len(appArray); i++ {
-				if !strings.Contains(appliststr, appArray[i]) {
-					var app Application
-					if result := PGDB.Where("appid = ?", appArray[i]).First(&app); result.Error == nil {
-						appMap := make(map[string]interface{})
-						appMap["app_id"] = app.Appid
-						appMap["app_name"] = app.Name
-						appMap["app_type"] = app.Type
-						appMap["app_latest"] = app.Latest
-						appMap["app_depend"] = app.Depend
-						appMap["app_status"] = app.Status
-						appMap["app_remark"] = app.Remark
-						content[app.Appid] = app.Latest
-						applist = append(applist, appMap)
-						appliststr += appArray[i] + ","
-						if app.Depend != "" {
-							listStr += app.Depend + ","
+			appArray := make([]map[string]interface{}, 0)
+			if err := json.Unmarshal([]byte(listStr), &appArray); err == nil {
+				for i := 0; i < len(appArray); i++ {
+					appid, _ := appArray[i]["appid"].(string)
+					version, _ := appArray[i]["version"].(string)
+					if appid != "" && !strings.Contains(appliststr, appid) {
+						var app Application
+						if result := PGDB.Where("appid = ?", appid).First(&app); result.Error == nil {
+							appMap := make(map[string]interface{})
+							appMap["app_id"] = app.Appid
+							appMap["app_name"] = app.Name
+							appMap["app_type"] = app.Type
+							if version == "latest" || version == "" {
+								appMap["app_version"] = app.Latest
+							} else {
+								appMap["app_version"] = version
+							}
+							appMap["app_depend"] = app.Depend
+							appMap["app_status"] = app.Status
+							appMap["app_remark"] = app.Remark
+							applist = append(applist, appMap)
+							appliststr += appid + ","
+							if app.Depend != "" {
+								dependStr += app.Depend + ","
+							}
 						}
 					}
 				}
 			}
-			if listStr != "" {
+
+		LOOP:
+			dependArray := strings.Split(dependStr, ",")
+			dependStr = ""
+			for i := 0; i < len(dependArray); i++ {
+				appid := dependArray[i]
+				if appid != "" && !strings.Contains(appliststr, appid) {
+					var app Application
+					if result := PGDB.Where("appid = ?", appid).First(&app); result.Error == nil {
+						appMap := make(map[string]interface{})
+						appMap["app_id"] = app.Appid
+						appMap["app_name"] = app.Name
+						appMap["app_type"] = app.Type
+						appMap["app_version"] = app.Latest
+						appMap["app_depend"] = app.Depend
+						appMap["app_status"] = app.Status
+						appMap["app_remark"] = app.Remark
+						applist = append(applist, appMap)
+						appliststr += appid + ","
+						if app.Depend != "" {
+							dependStr += app.Depend + ","
+						}
+					}
+				}
+			}
+
+			if dependStr != "" {
 				goto LOOP
 			}
+
 			if device.System != nil {
 				// 只显示设备系统
-				data := make(map[string]interface{})
-				data["system_ouid"] = device.System.OUID
-				data["system_name"] = device.System.Name
-				data["system_content"] = content
-				data["system_applist"] = applist
-				data["system_main"] = device.System.Main
-				data["system_status"] = device.System.Status
-				data["system_remark"] = device.System.Remark
-				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": data})
+				// deviceinfo := make(map[string]interface{})
+				devicesysteminfo := make(map[string]interface{})
+				devicesysteminfo["system_ouid"] = device.System.OUID
+				devicesysteminfo["system_name"] = device.System.Name
+				devicesysteminfo["system_applist"] = applist
+				devicesysteminfo["system_content"] = appArray
+				devicesysteminfo["system_main"] = device.System.Main
+				devicesysteminfo["system_status"] = device.System.Status
+				devicesysteminfo["system_remark"] = device.System.Remark
+				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": devicesysteminfo})
 			} else {
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": ""})
 			}
