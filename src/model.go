@@ -180,13 +180,13 @@ type Version struct {
 	ID             int64    `json:"id" gorm:"column:id;primaryKey;default:NULL"`                    // 自增ID
 	Version        string   `json:"version" gorm:"column:version"`                                  // 版本号
 	Appid          string   `json:"appid" gorm:"column:appid"`                                      // 应用id
-	Method         int      `json:"method" gorm:"column:method"`                                    // 更新方式
+	Method         string   `json:"method" gorm:"column:method"`                                    // 更新方式
 	Description    string   `json:"description" gorm:"column:description"`                          // 版本简介
 	CreatedAt      int64    `json:"created_at" gorm:"column:created_at;autoCreateTime"`             // 创建时间
 	From           string   `json:"from" gorm:"column:from"`                                        // 来自台主机上传
 	CreatorAccount *Account `json:"creator" gorm:"ForeignKey:CreatorID;AssociationForeignKey:OUID"` // 创建者
 	CreatorID      *string  `json:"creator_id" gorm:"column:creator;default:NULL"`                  // 创建者ID
-}
+}	
 
 func (Version) TableName() string {
 	return "m_version"
