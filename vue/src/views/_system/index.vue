@@ -236,7 +236,7 @@ export default {
           queryApplicationVersion({"appid":this.appList[i].appid}).then(response => {
             var appversion = response.data.items
             let len = appversion.length>10?10:appversion.length
-            for (let j = 0; j < len; j++){
+            for (let j = len-1; j >= 0; j--){
                 item.versionOptions.push(appversion[j].version)
             }
             this.activeAppList.push(item)   // 生成提供给应用表格的数据源
