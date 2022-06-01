@@ -39,6 +39,8 @@ func handleDevice(c *gin.Context, ps []string) {
 		generatejwt(c)
 	case "verify-jwt":
 		verifyjwt(c)
+	case "verify-oldjwt":
+		verifyOldJWT(c)
 	case "login":
 	case "logout":
 	default:
@@ -169,10 +171,11 @@ func queryDeviceSystem(c *gin.Context) {
 							appMap["app_name"] = app.Name
 							appMap["app_type"] = app.Type
 							if version == "latest" || version == "" {
-								appMap["app_version"] = app.Latest
+								appMap["app_version"] = "latest"
 							} else {
 								appMap["app_version"] = version
 							}
+							appMap["app_latest"] = app.Latest
 							appMap["app_depend"] = app.Depend
 							appMap["app_status"] = app.Status
 							appMap["app_remark"] = app.Remark
@@ -198,7 +201,8 @@ func queryDeviceSystem(c *gin.Context) {
 						appMap["app_id"] = app.Appid
 						appMap["app_name"] = app.Name
 						appMap["app_type"] = app.Type
-						appMap["app_version"] = app.Latest
+						appMap["app_version"] = "latest"
+						appMap["app_latest"] = app.Latest
 						appMap["app_depend"] = app.Depend
 						appMap["app_status"] = app.Status
 						appMap["app_remark"] = app.Remark
@@ -219,6 +223,8 @@ func queryDeviceSystem(c *gin.Context) {
 				// 只显示设备系统
 				// deviceinfo := make(map[string]interface{})
 				devicesysteminfo := make(map[string]interface{})
+				devicesysteminfo["device_ouid"] = device.OUID
+				devicesysteminfo["device_name"] = device.Name
 				devicesysteminfo["system_ouid"] = device.System.OUID
 				devicesysteminfo["system_name"] = device.System.Name
 				devicesysteminfo["system_applist"] = applist
@@ -436,6 +442,32 @@ func verifyjwt(c *gin.Context) {
 		// 读取jwt
 		if jwtok, err := ouid.VerifyJWT(tokenStr, Config.PriKey); jwtok && err == nil {
 			c.JSON(200, gin.H{"errcode": 0, "errmsg": "验证密钥成功", "data": 1})
+		} else {
+			c.JSON(200, gin.H{"errcode": 10107, "errmsg": "验证密钥失败"})
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
+	}
+}
+
+func verifyOldJWT(c *gin.Context) {
+	if c.Request.Method != "POST" {
+		c.Status(405)
+		return
+	}
+
+	userParam := make(map[string]interface{})
+	if err := c.BindJSON(&userParam); err == nil {
+		tokenStr, _ := userParam["token"].(string)
+		if jwt, err := ouid.ParseJWT(tokenStr); err == nil {
+			ouidStr := jwt.Playload.(ouid.JWTProof).Sub
+			var device Device
+			PGDB.Where("ouid = ?", ouidStr).First(&device)
+			if jwtok, err := ouid.VerifyJWT(tokenStr, MD5(device.PIN)); jwtok && err == nil {
+				c.JSON(200, gin.H{"errcode": 0, "errmsg": "验证密钥成功", "data": 1})
+			} else {
+				c.JSON(200, gin.H{"errcode": 10107, "errmsg": "验证密钥失败"})
+			}
 		} else {
 			c.JSON(200, gin.H{"errcode": 10107, "errmsg": "验证密钥失败"})
 		}

@@ -124,7 +124,9 @@ func createApplication(c *gin.Context) {
 		logger.Debugf("请求的账号信息:%v", account)
 		var app Application
 		if err := c.BindJSON(&app); err == nil {
-			app.Appid = MD5(ouid.GenerateOUID())
+			if app.Appid == "" {
+				app.Appid = MD5(ouid.GenerateOUID())
+			}
 			app.CreatorID = &account.OUID
 			if result := PGDB.Debug().Create(&app); result.Error == nil {
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": app.Appid})

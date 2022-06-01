@@ -121,6 +121,8 @@
       :title="dialogAccountTitle"
       :visible.sync="dialogAccountFormVisible"
       width="60%"
+      :close-on-press-escape="false" 
+      :close-on-click-modal="false"
     >
       <el-form
         :model="accountData"

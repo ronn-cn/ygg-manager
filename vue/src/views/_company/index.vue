@@ -50,7 +50,7 @@
     </el-table>
 
     <!-- 新建商户弹窗 -->
-    <el-dialog :title="dialogTitle" :visible.sync="dialogFormVisible">
+    <el-dialog :title="dialogTitle" :visible.sync="dialogFormVisible" :close-on-press-escape="false" :close-on-click-modal="false">
       <el-form ref="companyData" :model="companyData" label-position="left" label-width="100px">
         <el-form-item label="名称">
           <el-input v-model="companyData.name" placeholder="请填写公司的名称" />

@@ -57,7 +57,9 @@ func createLicense(c *gin.Context) {
 		logger.Debugf("请求的账号信息:%v", account)
 		var license License
 		if err := c.BindJSON(&license); err == nil {
-			license.Code = MD5(ouid.GenerateOUID())
+			if license.Code == "" {
+				license.Code = MD5(ouid.GenerateOUID())
+			}
 			license.CreatorID = &account.OUID
 			if result := PGDB.Debug().Create(&license); result.Error == nil {
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": license.Code})

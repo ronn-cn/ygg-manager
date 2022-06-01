@@ -67,7 +67,7 @@
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
 
     <!-- 添加编辑应用弹窗 -->
-    <el-dialog :title="dialogApplicationFormTitle" :visible.sync="dialogApplicationFormVisible">
+    <el-dialog :title="dialogApplicationFormTitle" :visible.sync="dialogApplicationFormVisible" :close-on-press-escape="false" :close-on-click-modal="false">
       <el-form ref="appData" :model="appData" label-position="center" label-width="100px">
         <el-form-item label="Appid" prop="appid">
           <el-input v-model="appData.appid" placeholder="不填写，默认自动生成Appid"/>

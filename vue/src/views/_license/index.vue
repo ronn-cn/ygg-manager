@@ -59,7 +59,7 @@
 
     
     <!-- 新建设备弹窗 -->
-    <el-dialog :title="dialogLicenseTitle" :visible.sync="dialogLicenseFormVisible">
+    <el-dialog :title="dialogLicenseTitle" :visible.sync="dialogLicenseFormVisible" :close-on-press-escape="false" :close-on-click-modal="false">
       <el-form ref="licenseData" :model="licenseData" label-position="left" label-width="100px">
         <el-form-item label="密钥Code">
           <el-input v-model="licenseData.ouid" placeholder="不填写，默认自动生成Code" />

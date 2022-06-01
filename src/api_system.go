@@ -90,7 +90,9 @@ func createSystem(c *gin.Context) {
 		logger.Debugf("请求的账号信息:%v", account)
 		var system System
 		if err := c.BindJSON(&system); err == nil {
-			system.OUID = ouid.GenerateOUID()
+			if system.OUID == "" {
+				system.OUID = ouid.GenerateOUID()
+			}
 			system.CreatorID = &account.OUID
 			if result := PGDB.Debug().Create(&system); result.Error == nil {
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": system.OUID})

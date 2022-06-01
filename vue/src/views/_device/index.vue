@@ -85,7 +85,7 @@
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
 
       <!-- 新建设备弹窗 -->
-    <el-dialog :title="dialogDeviceTitle" :visible.sync="dialogDeviceFormVisible">
+    <el-dialog :title="dialogDeviceTitle" :visible.sync="dialogDeviceFormVisible" :close-on-press-escape="false" :close-on-click-modal="false">
       <el-form ref="deviceData" :model="deviceData" label-position="left" label-width="100px">
         <el-form-item label="设备OUID">
           <el-input v-model="deviceData.ouid" placeholder="不填写，默认自动生成OUID" />

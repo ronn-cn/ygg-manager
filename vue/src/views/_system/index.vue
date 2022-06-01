@@ -55,7 +55,7 @@
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
 
     <!-- 系统新建与编辑弹窗 -->
-    <el-dialog :title="dialogSystemFormTitle" :visible.sync="dialogSystemFormVisible" :close-on-click-modal="false" width="65%">
+    <el-dialog :title="dialogSystemFormTitle" :visible.sync="dialogSystemFormVisible" :close-on-press-escape="false" :close-on-click-modal="false" width="65%">
       <el-form ref="systemData" :model="systemData" label-position="left" label-width="70px">
         <el-form-item label="OUID" prop="ouid">
           <el-input v-model="systemData.ouid" placeholder="不填写，默认自动生成OUID" />
