@@ -39,9 +39,9 @@
           <span v-if="row.showPin">{{ row.pin }}</span>
           <span v-else>******</span>
           <!-- 修改PIN码图标按钮 -->
-          <el-tooltip class="item" effect="light" content="修改PIN码" placement="bottom-start" >
+          <!-- <el-tooltip class="item" effect="light" content="修改PIN码" placement="bottom-start" >
             <em class="el-icon-edit"  style="cursor: pointer" click=""></em>
-          </el-tooltip>
+          </el-tooltip> -->
           </template>
       </el-table-column>
       <el-table-column label="状态"  min-width="80" 

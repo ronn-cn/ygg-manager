@@ -46,11 +46,11 @@ func initLogger() bool {
 
 // 初始化数据库
 func initDB() bool {
-	host := "172.16.7.100"
-	port := "5432"
-	user := "postgres"
-	passwd := "postgres"
-	dbname := "manager"
+	host := Config.DbHost
+	port := Config.DbPort
+	user := Config.DbUser
+	passwd := Config.DbPasswd
+	dbname := Config.DbName
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Shanghai", host, user, passwd, dbname, port)
 	var pgErr error
 	PGDB, pgErr = gorm.Open(postgres.Open(dsn), &gorm.Config{})

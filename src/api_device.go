@@ -219,12 +219,11 @@ func queryDeviceSystem(c *gin.Context) {
 				goto LOOP
 			}
 
+			devicesysteminfo := make(map[string]interface{})
+			devicesysteminfo["device_ouid"] = device.OUID
+			devicesysteminfo["device_name"] = device.Name
 			if device.System != nil {
 				// 只显示设备系统
-				// deviceinfo := make(map[string]interface{})
-				devicesysteminfo := make(map[string]interface{})
-				devicesysteminfo["device_ouid"] = device.OUID
-				devicesysteminfo["device_name"] = device.Name
 				devicesysteminfo["system_ouid"] = device.System.OUID
 				devicesysteminfo["system_name"] = device.System.Name
 				devicesysteminfo["system_applist"] = applist
@@ -234,7 +233,7 @@ func queryDeviceSystem(c *gin.Context) {
 				devicesysteminfo["system_remark"] = device.System.Remark
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": devicesysteminfo})
 			} else {
-				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": ""})
+				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": devicesysteminfo})
 			}
 			return
 		} else {
