@@ -20,6 +20,7 @@ func main() {
 		return
 	}
 	configToDB()
+	go connYggdrasil()
 	initServer()
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"libs/logger"
+	N "libs/network"
 	"libs/ouid"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,8 @@ func handleSystem(c *gin.Context, ps []string) {
 		updateSystem(c)
 	case "delete-system":
 		deleteSystem(c)
+	case "push-system":
+		pushSystem(c)
 	default:
 		c.Status(404)
 		return
@@ -152,5 +155,47 @@ func deleteSystem(c *gin.Context) {
 		}
 	} else {
 		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+	}
+}
+
+// 推送系统
+func pushSystem(c *gin.Context) {
+	if c.Request.Method != "POST" {
+		c.Status(405)
+		return
+	}
+
+	if cert, err := VerifyToken(c); err == nil {
+		fmt.Println(cert)
+		var system System
+		if err := c.BindJSON(&system); err == nil {
+			PGDB.Debug().Where("ouid = ?", system.OUID).First(&system)
+			var devices []Device
+			if result := PGDB.Debug().Where("system = ?", system.OUID).Find(&devices); result.Error == nil {
+				pushdata := make(map[string]interface{})
+				deviceouids := make([]string, 0)
+				for _, dev := range devices {
+					deviceouids = append(deviceouids, dev.OUID)
+				}
+				pushdata["devices"] = deviceouids
+				pushdata["system"] = system
+
+				obj := N.NewOMTPDataToJSON("PushUpdate", N.REPORT, 0, pushdata)
+				if msgBytes, err := N.NewOMTPMessage("json", obj); err == nil {
+					if err := SelfNode.NodeSend(GatherNode, msgBytes); err == nil {
+						logger.Infof("[%s]: %v", SelfNode.OUID, "推送："+string(msgBytes))
+						c.JSON(200, gin.H{"errcode": 0, "errmsg": "推送更新成功"})
+						return
+					} else {
+						logger.Errorf("[%s]: %v", SelfNode.OUID, err)
+					}
+				} else {
+					logger.Errorf("[%s]: %v", "推送", err)
+				}
+			}
+
+			c.JSON(200, gin.H{"errcode": 10205, "errmsg": "推送更新失败"})
+			return
+		}
 	}
 }

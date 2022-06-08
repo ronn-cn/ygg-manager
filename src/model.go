@@ -2,16 +2,17 @@ package main
 
 // 配置文件结构体
 type Configure struct {
-	Ouid     string `toml:"ouid" json:"ouid"`
-	Pin      string `toml:"pin" json:"pin"`
-	PriKey   string `toml:"prikey" json:"prikey"`
-	PubKey   string `toml:"pubkey" json:"pubkey"`
-	Port     string `toml:"port" json:"port"`
-	DbHost   string `toml:"db_host" json:"db_host"`
-	DbPort   string `toml:"db_port" json:"db_port"`
-	DbUser   string `toml:"db_user" json:"db_user"`
-	DbPasswd string `toml:"db_passwd" json:"db_passwd"`
-	DbName   string `toml:"db_name" json:"db_name"`
+	Ouid      string `toml:"ouid" json:"ouid"`
+	Pin       string `toml:"pin" json:"pin"`
+	PriKey    string `toml:"prikey" json:"prikey"`
+	PubKey    string `toml:"pubkey" json:"pubkey"`
+	Port      string `toml:"port" json:"port"`
+	DbHost    string `toml:"db_host" json:"db_host"`
+	DbPort    string `toml:"db_port" json:"db_port"`
+	DbUser    string `toml:"db_user" json:"db_user"`
+	DbPasswd  string `toml:"db_passwd" json:"db_passwd"`
+	DbName    string `toml:"db_name" json:"db_name"`
+	Yggdrasil string `toml:"yggdrasil" json:"yggdrasil"`
 }
 
 // gorm.Model 的定义
@@ -186,7 +187,7 @@ type Version struct {
 	From           string   `json:"from" gorm:"column:from"`                                        // 来自台主机上传
 	CreatorAccount *Account `json:"creator" gorm:"ForeignKey:CreatorID;AssociationForeignKey:OUID"` // 创建者
 	CreatorID      *string  `json:"creator_id" gorm:"column:creator;default:NULL"`                  // 创建者ID
-}	
+}
 
 func (Version) TableName() string {
 	return "m_version"

@@ -47,3 +47,12 @@ export function querySystem(id) {
     params: { id }
   })
 }
+
+// 推送系统
+export function pushSystem(data) {
+  return request({
+    url: '/system/push-system',
+    method: 'post',
+    data
+  })
+}

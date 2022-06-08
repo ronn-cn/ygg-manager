@@ -43,7 +43,7 @@
           <el-dropdown>
             <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item>推送更新</el-dropdown-item>
+              <el-dropdown-item @click.native="pushSystemData(row)">推送更新</el-dropdown-item>
               <el-dropdown-item v-if="row.status == 0">发布系统</el-dropdown-item>
               <el-dropdown-item @click.native="deleteSystemData(row.ouid)">删除系统</el-dropdown-item>
             </el-dropdown-menu>
@@ -161,7 +161,7 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { getSystemList,createSystem,updateSystem,deleteSystem } from '@/api/system'
+import { getSystemList,createSystem,updateSystem,deleteSystem,pushSystem } from '@/api/system'
 import { getApplicationList, queryApplicationVersion } from '@/api/application'
 import waves from '@/directive/waves' // waves directive
 import { parseTime } from '@/utils'
@@ -456,6 +456,16 @@ export default {
         });          
       });
     },
+    pushSystemData(row) {
+      console.log("要推送的系统:",row.ouid)
+      pushSystem(row).then(() => {
+        this.$message({
+          type: 'success',
+          message: '推送系统成功!'
+        });
+      });
+      
+    }
   }
 }
 </script>

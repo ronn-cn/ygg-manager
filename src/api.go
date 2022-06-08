@@ -110,6 +110,8 @@ func handleManagerApi(c *gin.Context) {
 		handleRecord(c, ps)
 	case "setting":
 		handleSetting(c, ps)
+	case "bbs":
+		handleBBS(c, ps)
 	default:
 		c.Status(404)
 	}
@@ -221,5 +223,66 @@ func handleDashboard(c *gin.Context, ps []string) {
 		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": reData})
 	default:
 		c.Status(404)
+	}
+}
+
+func CreatJwt(toouid string, registerCode string) (string, error) {
+
+	jwt := ouid.JWT{
+		Header: ouid.JWTHeader{
+			Typ: "proof",
+			Alg: "hs256",
+		},
+		Playload: ouid.JWTProof{
+			Jti: MD5(time.Now().Local().String()),
+			Iss: Config.Ouid,
+			Sub: toouid,
+			Obj: toouid,
+			Iat: 0,
+			Nbf: 0,
+			Oth: registerCode,
+		},
+	}
+
+	return ouid.SignJWT(jwt, Config.PriKey)
+
+}
+func handleBBS(c *gin.Context, ps []string) {
+	// 记录，这是一个老接口，从原先manager1版本中移植过来的，用于bss的验证
+	if len(ps) < 1 {
+		c.Status(404)
+		return
+	}
+	switch ps[1] {
+	case "jwt":
+		if c.Request.Method == "GET" {
+			if c.Query("enterInfo") == "" {
+				c.JSON(200, gin.H{"code": 0, "msg": "缺少必要参数"})
+				return
+			}
+			// 为bbs生成jwt
+			// 签发jwt证书
+			if jwtRsp, err := CreatJwt(c.Query("enterInfo"), ""); err == nil {
+				c.JSON(200, gin.H{"code": 1, "msg": "获取成功", "data": jwtRsp})
+				return
+			}
+			c.JSON(200, gin.H{"code": 0, "msg": "获取失败"})
+		}
+
+		if c.Request.Method == "POST" {
+			token := c.PostForm("jwt")
+			if token == "" {
+				c.JSON(200, gin.H{"code": 0, "msg": "必要参数为空"})
+				return
+			}
+
+			if _, err := ouid.ParseJWT(token); err == nil {
+
+				c.JSON(200, gin.H{"code": 1, "msg": "解析成功"})
+				return
+			}
+			c.JSON(200, gin.H{"code": 0, "msg": "解析失败"})
+			return
+		}
 	}
 }
