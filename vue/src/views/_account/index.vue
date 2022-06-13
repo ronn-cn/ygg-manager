@@ -1,9 +1,7 @@
 <template>
   <div class="app-container">
     <!-- 新建账号按钮 -->
-    <el-button type="primary" @click="handleAccountClick('create', null)"
-      >新建账号</el-button
-    >
+    <el-button type="primary" @click="handleAccountClick('create', null)">新建账号</el-button>
 
     <!-- 账号列表 -->
     <el-table
@@ -35,17 +33,8 @@
       <el-table-column align="center" label="密码">
         <template slot-scope="{ row }">
           <span>******</span>
-          <el-tooltip
-            class="item"
-            effect="light"
-            content="修改密码"
-            placement="bottom-start"
-          >
-            <em
-              class="el-icon-edit"
-              style="cursor: pointer"
-              @click="handleAccountPasswdChangeClick(row)"
-            ></em>
+          <el-tooltip class="item" effect="light" content="修改密码" placement="bottom-start">
+            <em class="el-icon-edit" style="cursor: pointer" @click="handleAccountPasswdChangeClick(row)"></em>
           </el-tooltip>
         </template>
       </el-table-column>
@@ -102,12 +91,14 @@
           class="passwd-input"
           placeholder="请输入修改的密码"
           show-password
+          autocomplete="off"
         />
         <el-input
           v-model="passwd2"
           class="passwd-input"
           placeholder="请输入刚才的密码"
           show-password
+          autocomplete="off"
         />
       </el-form>
       <span slot="footer" class="dialog-footer">
@@ -134,21 +125,13 @@
           <el-input v-model="accountData.name" placeholder="请输入名称" />
         </el-form-item>
         <el-form-item v-if="user.info.type_id != accountData.type_id" label="账号" prop="account">
-          <el-input v-model="accountData.account" placeholder="请输入账号" />
+          <el-input v-model="accountData.account" placeholder="请输入账号" autocomplete="off" />
         </el-form-item>
         <el-form-item label="密码" prop="passwd" v-if="dialogAccountStatus=='create'">
-          <el-input
-            v-model="accountData.passwd"
-            placeholder="请输入密码"
-            show-password
-          />
+          <el-input v-model="accountData.passwd" placeholder="请输入密码" show-password autocomplete="off" />
         </el-form-item>
         <el-form-item  v-if="user.info.type_id != accountData.type_id" label="类型" prop="type_id">
-          <el-select
-            v-model="accountData.type_id"
-            class="filter-item"
-            placeholder="请选择类型"
-          >
+          <el-select v-model="accountData.type_id" class="filter-item" placeholder="请选择类型">
             <el-option
               v-for="item in accountTypeOptions"
               :key="item.value"

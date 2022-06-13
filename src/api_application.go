@@ -63,7 +63,8 @@ func getApplicationList(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 10200, "errmsg": "查询数据错误"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		logger.Debugf("发现错误：%v", err)
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 

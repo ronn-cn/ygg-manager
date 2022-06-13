@@ -47,3 +47,11 @@ export function queryDevice(id) {
     params: { id }
   })
 }
+
+// 查询设备
+export function pushUpdate(id) {
+  return request({
+    url: '/device/push-update?ouid='+id,
+    method: 'post'
+  })
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"libs/convert"
 	"libs/logger"
+	N "libs/network"
 	"libs/ouid"
 	"math/rand"
 	"strings"
@@ -325,8 +326,8 @@ func updateDevice(c *gin.Context) {
 		return
 	}
 
-	if account, err := VerifyToken(c); err == nil {
-		fmt.Println(account)
+	if cert, err := VerifyToken(c); err == nil {
+		fmt.Println(cert)	
 		var device Device
 		if err := c.BindJSON(&device); err == nil {
 			if result := PGDB.Debug().Model(&Device{OUID: device.OUID}).Select("name", "pin", "system", "status", "remark").Updates(&device); result.Error == nil {
@@ -350,8 +351,8 @@ func deleteDevice(c *gin.Context) {
 		return
 	}
 
-	if account, err := VerifyToken(c); err == nil {
-		fmt.Println(account)
+	if cert, err := VerifyToken(c); err == nil {
+		fmt.Println(cert)
 		// 删除账号
 		ouidstr := c.Query("ouid")
 		logger.Debugf("请求的OUID：%v", ouidstr)
@@ -362,13 +363,48 @@ func deleteDevice(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 10205, "errmsg": "删除数据错误"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 
 // 推送更新
 func pushUpdateToDevice(c *gin.Context) {
-	// 调用YGG接口
+	if c.Request.Method != "POST" {
+		c.Status(405)
+		return
+	}
+
+	if cert, err := VerifyToken(c); err == nil {
+		fmt.Println(cert)
+
+		deviceouid := c.Query("ouid")
+		var device Device
+		if result := PGDB.Debug().Where("ouid = ?", deviceouid).First(&device); result.Error == nil {
+			pushdata := make(map[string]interface{})
+			deviceouids := make([]string, 0)
+			deviceouids = append(deviceouids, deviceouid)
+			pushdata["devices"] = deviceouids
+			pushdata["system"] = device.System
+			obj := N.NewOMTPDataToJSON("PushUpdate", N.REPORT, 0, pushdata)
+			if msgBytes, err := N.NewOMTPMessage("json", obj); err == nil {
+				if err := SelfNode.NodeSend(GatherNode, msgBytes); err == nil {
+					logger.Infof("[%s]: %v", SelfNode.OUID, "推送："+string(msgBytes))
+					c.JSON(200, gin.H{"errcode": 0, "errmsg": "推送更新成功"})
+					return
+				} else {
+					logger.Errorf("[%s]: %v", SelfNode.OUID, err)
+				}
+			} else {
+				logger.Errorf("[%s]: %v", "推送", err)
+			}
+		} else {
+			logger.Debugf("没有查询到设备：%v", deviceouid)
+			c.JSON(200, gin.H{"errcode": 10200, "errmsg": "数据缺失"})
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
+	}
+
 }
 
 // 生成JWT
@@ -387,7 +423,7 @@ func generatejwt(c *gin.Context) {
 			passwd := SHA256(device.PIN + "woshiyanzhi") // 将提交的密码加上盐值（woshiyanzhi）后哈希对比
 			if pinStr == passwd {
 				othData := make(map[string]interface{})
-				othData["cert_type"] = "account"
+				othData["cert_type"] = "device"
 				othData["ouid"] = device.OUID
 				othData["name"] = device.Name
 				othData["ip"] = c.ClientIP()

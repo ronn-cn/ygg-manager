@@ -29,8 +29,7 @@ func VerifyToken(c *gin.Context) (Certification, error) {
 		authArr := strings.Split(jwtoken, " ")
 		if len(authArr) != 2 || authArr[0] != "hexjwt" {
 			return cert, errors.New("验证信息格式不正确")
-		}
-		// 读取jwt
+		} // 读取jwt
 		if jwtok, err := ouid.VerifyJWT(authArr[1], Config.PriKey); jwtok && err == nil {
 			if jwtObj, err := ouid.ParseJWT(authArr[1]); err == nil {
 				playload := jwtObj.Playload.(ouid.JWTProof)
@@ -45,14 +44,19 @@ func VerifyToken(c *gin.Context) (Certification, error) {
 					switch certType {
 					case "account":
 						var acc Account
-						acc.OUID, _ = certMap["ouid"].(string)
+						acc.OUID = cert.OUID
 						acc.Account, _ = certMap["account"].(string)
-						acc.Name, _ = certMap["name"].(string)
+						acc.Name = cert.Name
 						typeid, _ := certMap["type"].(float64)
 						acc.TypeID = int(typeid)
-						acc.IP, _ = certMap["ip"].(string)
+						acc.IP = cert.IP
 						cert.CertContent = acc
 					case "device":
+						// TODO: 编写设备的验证,现在写了，但是还是缺少。
+						var dev Device
+						dev.OUID = cert.OUID
+						dev.Name = cert.Name
+						cert.CertContent = dev
 					}
 
 					return cert, nil
@@ -84,6 +88,19 @@ func VerifyTokenForAccount(c *gin.Context) (Account, error) {
 }
 
 // TODO:验证设备的令牌
+func VerifyTokenForDevice(c *gin.Context) (Device, error) {
+	var dev Device
+	if cert, err := VerifyToken(c); err == nil {
+		if cert.CertType == "device" {
+			dev = cert.CertContent.(Device)
+		} else {
+			err = errors.New("不是设备类型的验证信息")
+		}
+		return dev, err
+	} else {
+		return dev, err
+	}
+}
 
 // 处理管理API
 func handleManagerApi(c *gin.Context) {
