@@ -155,6 +155,14 @@
           </el-table>
         </el-descriptions-item>
       </el-descriptions>
+
+      <h3>版本列表</h3>
+      <el-table :data="aaa" style="width: 100%">
+        <el-table-column prop="version" label="版本号"> </el-table-column>
+        <el-table-column prop="method" label="方法"> </el-table-column>
+        <el-table-column prop="desc" label="描述"> </el-table-column>
+        <el-table-column prop="time" label="时间"> </el-table-column>
+      </el-table>
     </el-dialog>
   </div>
 </template>

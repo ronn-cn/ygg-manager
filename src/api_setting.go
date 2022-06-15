@@ -40,10 +40,10 @@ func getSetting(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": redata})
 		} else {
 			// 没有权限访问 10104
-			c.JSON(200, gin.H{"errcode": 10104, "errmsg": "没有权限访问", "data": nil})
+			c.JSON(200, gin.H{"errcode": 10104, "errmsg": "没有权限访问"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 
@@ -67,9 +67,9 @@ func saveSetting(c *gin.Context) {
 			}
 		} else {
 			// 没有权限访问 10104
-			c.JSON(200, gin.H{"errcode": 10104, "errmsg": "没有权限访问", "data": nil})
+			c.JSON(200, gin.H{"errcode": 10104, "errmsg": "没有权限访问"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }

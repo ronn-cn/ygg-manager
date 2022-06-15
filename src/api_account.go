@@ -51,11 +51,11 @@ func getAccountList(c *gin.Context) {
 		fmt.Println(account)
 		// TODO: 暂时设置为9，方便调用，正确改为2
 		if account.TypeID > 2 { // 不是管理员，没有权限访问
-			c.JSON(200, gin.H{"errcode": 10104, "errmsg": "没有权限访问", "data": nil})
+			c.JSON(200, gin.H{"errcode": 10104, "errmsg": "没有权限访问"})
 			return
 		}
 		// if account.Status == 0 { // 禁用状态
-		// 	c.JSON(200, gin.H{"errcode": 10101, "errmsg": "账号禁用状态", "data": nil})
+		// 	c.JSON(200, gin.H{"errcode": 10101, "errmsg": "账号禁用状态"})
 		// 	return
 		// }
 
@@ -69,7 +69,7 @@ func getAccountList(c *gin.Context) {
 		fmt.Println(gin.H{"total": len(accounts), "items": accounts})
 		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(accounts), "items": accounts}})
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 
@@ -81,12 +81,12 @@ func getAccountInfo(c *gin.Context) {
 	if account, err := VerifyTokenForAccount(c); err == nil {
 		PGDB.Where("account = ?", account.Account).First(&account)
 		if account.Status == 0 { // 禁用状态
-			c.JSON(200, gin.H{"errcode": 10101, "errmsg": "账号禁用状态", "data": nil})
+			c.JSON(200, gin.H{"errcode": 10101, "errmsg": "账号禁用状态"})
 			return
 		}
 		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": account})
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 
@@ -121,7 +121,7 @@ func getAccountPermissions(c *gin.Context) {
 		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": redata})
 	} else {
 		fmt.Println(err)
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 

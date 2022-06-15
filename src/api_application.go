@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"libs/convert"
 	"libs/logger"
 	"libs/ouid"
 
@@ -39,13 +41,17 @@ func getApplicationList(c *gin.Context) {
 		return
 	}
 
-	if account, err := VerifyToken(c); err == nil {
-		logger.Debugf("请求的账号信息:%v", account)
+	if cert, err := VerifyToken(c); err == nil {
+		fmt.Println(cert)
+
+		pagestr := c.Query("page")
+		limitstr := c.Query("limit")
+
 		namestr := c.Query("name")
 		appidstr := c.Query("appid")
 		typestr := c.Query("type")
 
-		var application []Application
+		var applications []Application
 
 		var tx *gorm.DB = PGDB
 		if namestr != "" {
@@ -57,8 +63,21 @@ func getApplicationList(c *gin.Context) {
 		if typestr != "" {
 			tx = PGDB.Where("type = ?", typestr)
 		}
-		if result := tx.Debug().Order("id").Find(&application); result.Error == nil {
-			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(application), "items": application}})
+		if result := tx.Debug().Order("id").Find(&applications); result.Error == nil {
+
+			items := applications
+			total := int64(len(applications))
+
+			if pagestr != "" {
+				limitnum := convert.StoI(limitstr)
+				startnum := (convert.StoI(pagestr) - 1) * limitnum
+				endnum := convert.StoI(pagestr) * limitnum
+				if endnum > total {
+					endnum = total
+				}
+				items = applications[startnum:endnum]
+			}
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": total, "items": items}})
 		} else {
 			c.JSON(200, gin.H{"errcode": 10200, "errmsg": "查询数据错误"})
 		}
@@ -83,11 +102,11 @@ func queryApplication(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": app})
 			return
 		} else {
-			c.JSON(200, gin.H{"errcode": 10201, "errmsg": "数据错误", "data": nil})
+			c.JSON(200, gin.H{"errcode": 10201, "errmsg": "数据错误"})
 			return
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 		return
 	}
 }
@@ -109,7 +128,7 @@ func queryApplicationVersion(c *gin.Context) {
 			return
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 		return
 	}
 }
@@ -139,7 +158,7 @@ func createApplication(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 

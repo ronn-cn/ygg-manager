@@ -1,9 +1,11 @@
 package main
 
 import (
+	"libs/convert"
 	"libs/logger"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func handleRecord(c *gin.Context, ps []string) {
@@ -29,14 +31,44 @@ func getRecordList(c *gin.Context) {
 	}
 
 	if _, err := VerifyToken(c); err == nil {
+
+		pagestr := c.Query("page")
+		limitstr := c.Query("limit")
+		typestr := c.Query("type")
+		levelstr := c.Query("level")
+		infostr := c.Query("info")
+
+		var tx *gorm.DB = PGDB
+		if typestr != "" {
+			tx = tx.Where("type = ?", typestr)
+		}
+		if infostr != "" {
+			tx = tx.Where("info LIKE ?", "%"+infostr+"%")
+		}
+		if levelstr != "" {
+			tx = tx.Where("level = ?", levelstr)
+		}
+
 		var records []Record // 日志复数
-		if result := PGDB.Debug().Find(&records); result.Error == nil {
-			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(records), "items": records}})
+		if result := tx.Debug().Find(&records); result.Error == nil {
+			items := records
+			total := int64(len(records))
+
+			if pagestr != "" {
+				limitnum := convert.StoI(limitstr)
+				startnum := (convert.StoI(pagestr) - 1) * limitnum
+				endnum := convert.StoI(pagestr) * limitnum
+				if endnum > total {
+					endnum = total
+				}
+				items = records[startnum:endnum]
+			}
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": total, "items": items}})
 		} else {
 			c.JSON(200, gin.H{"errcode": 10200, "errmsg": "查询数据错误"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 
@@ -60,6 +92,6 @@ func createRecord(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }

@@ -42,7 +42,7 @@ func getLicenseList(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 10200, "errmsg": "查询数据错误"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 
@@ -71,7 +71,7 @@ func createLicense(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 
@@ -92,6 +92,6 @@ func deleteLicense(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 10205, "errmsg": "删除数据错误"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }

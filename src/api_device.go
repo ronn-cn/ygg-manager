@@ -58,6 +58,9 @@ func getDeviceList(c *gin.Context) {
 	if account, err := VerifyTokenForAccount(c); err == nil {
 		fmt.Println(account)
 
+		pagestr := c.Query("page")
+		limitstr := c.Query("limit")
+
 		namestr := c.Query("name")
 		ouidstr := c.Query("ouid")
 		statusstr := c.Query("status_id")
@@ -95,10 +98,22 @@ func getDeviceList(c *gin.Context) {
 		default:
 			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Find(&devices)
 		}
-		fmt.Println(gin.H{"total": len(devices), "items": devices})
-		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(devices), "items": devices}})
+
+		items := devices
+		total := int64(len(devices))
+
+		if pagestr != "" {
+			limitnum := convert.StoI(limitstr)
+			startnum := (convert.StoI(pagestr) - 1) * limitnum
+			endnum := convert.StoI(pagestr) * limitnum
+			if endnum > total {
+				endnum = total
+			}
+			items = devices[startnum:endnum]
+		}
+		c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": total, "items": items}})
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 
@@ -131,11 +146,11 @@ func queryDevice(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device})
 			return
 		} else {
-			c.JSON(200, gin.H{"errcode": 10201, "errmsg": "数据错误", "data": nil})
+			c.JSON(200, gin.H{"errcode": 10201, "errmsg": "数据错误"})
 			return
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 		return
 	}
 }
@@ -238,11 +253,11 @@ func queryDeviceSystem(c *gin.Context) {
 			}
 			return
 		} else {
-			c.JSON(200, gin.H{"errcode": 10201, "errmsg": "数据错误", "data": nil})
+			c.JSON(200, gin.H{"errcode": 10201, "errmsg": "数据错误"})
 			return
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 		return
 	}
 }
@@ -315,7 +330,7 @@ func createDevice(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 
@@ -327,7 +342,7 @@ func updateDevice(c *gin.Context) {
 	}
 
 	if cert, err := VerifyToken(c); err == nil {
-		fmt.Println(cert)	
+		fmt.Println(cert)
 		var device Device
 		if err := c.BindJSON(&device); err == nil {
 			if result := PGDB.Debug().Model(&Device{OUID: device.OUID}).Select("name", "pin", "system", "status", "remark").Updates(&device); result.Error == nil {
@@ -340,7 +355,7 @@ func updateDevice(c *gin.Context) {
 			c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
 		}
 	} else {
-		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误", "data": nil})
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }
 
