@@ -26,12 +26,16 @@ func handleDevice(c *gin.Context, ps []string) {
 		getDeviceList(c)
 	case "query-device":
 		queryDevice(c)
+	case "query-device-status":
+		queryDeviceStatus(c)
 	case "query-device-system":
 		queryDeviceSystem(c)
 	case "create-device":
 		createDevice(c)
 	case "update-device":
 		updateDevice(c)
+	case "update-device-pin":
+		updateDevicePin(c)
 	case "delete-device":
 		deleteDevice(c)
 	case "push-update":
@@ -42,8 +46,10 @@ func handleDevice(c *gin.Context, ps []string) {
 		verifyjwt(c)
 	case "verify-oldjwt":
 		verifyOldJWT(c)
-	case "login":
-	case "logout":
+	case "online":
+		online(c)
+	case "offline":
+		offline(c)
 	default:
 		c.Status(404)
 		return
@@ -85,10 +91,10 @@ func getDeviceList(c *gin.Context) {
 		switch account.TypeID {
 		case 3: // 判断是开发
 			fmt.Println("判断是开发,只能查看开发设备")
-			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("status = ?", 13).Find(&devices)
+			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("status = ?", 7).Find(&devices)
 		case 4: // 判断是运维
 			fmt.Println("判断是运维,只能查看除开发之外的设备")
-			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("status <> ?", 13).Find(&devices)
+			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("status <> ?", 7).Find(&devices)
 		case 5: // 判断是生产
 			tx.Order("id").Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("manufacturer = ?", account.Company).Find(&devices)
 		case 6: // 判断是销售
@@ -152,6 +158,24 @@ func queryDevice(c *gin.Context) {
 	} else {
 		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 		return
+	}
+}
+
+func queryDeviceStatus(c *gin.Context) {
+	if c.Request.Method != "GET" {
+		c.Status(405)
+		return
+	}
+
+	if _, err := VerifyToken(c); err == nil {
+		var dss []DeviceStatus
+		if result := PGDB.Debug().Find(&dss); result.Error == nil {
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": dss})
+			return
+		} else {
+			c.JSON(200, gin.H{"errcode": 10201, "errmsg": "数据错误"})
+			return
+		}
 	}
 }
 
@@ -262,7 +286,7 @@ func queryDeviceSystem(c *gin.Context) {
 	}
 }
 
-// 创建账号
+// 创建设备
 func createDevice(c *gin.Context) {
 	if c.Request.Method != "POST" {
 		c.Status(405)
@@ -281,9 +305,14 @@ func createDevice(c *gin.Context) {
 		// 创建账号
 		var device Device
 		if err := c.BindJSON(&device); err == nil {
+			logger.Debugf("提交的设备信息：%v", device)
 			if account.TypeID == 3 { //开发类型
-				var id int = 13
+				var id int = 7
 				device.StatusID = &id
+			}
+			if *device.SystemOUID == "" {
+				logger.Debugf("systemouid %v", *device.SystemOUID)
+				device.SystemOUID = nil
 			}
 			licenseCode := c.Query("license")
 			var license License
@@ -313,16 +342,15 @@ func createDevice(c *gin.Context) {
 				rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 				device.PIN = fmt.Sprintf("%06v", rnd.Int31n(1000000))
 			}
-			device.OwnerID = account.CompanyID
-			device.Manufacturer = account.CompanyID
 			if result := PGDB.Debug().Create(&device); result.Error == nil {
 				// 创建成功后，注册码-1
 				if licenseCode != "" {
 					license.UseCount++
 					PGDB.Save(&license)
 				}
-				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device.OUID})
+				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device})
 			} else {
+				logger.Debugf("返回结果：%v", result.Error)
 				c.JSON(200, gin.H{"errcode": 10203, "errmsg": "创建数据错误"})
 			}
 		} else {
@@ -345,7 +373,32 @@ func updateDevice(c *gin.Context) {
 		fmt.Println(cert)
 		var device Device
 		if err := c.BindJSON(&device); err == nil {
-			if result := PGDB.Debug().Model(&Device{OUID: device.OUID}).Select("name", "pin", "system", "status", "remark").Updates(&device); result.Error == nil {
+			if result := PGDB.Debug().Model(&Device{OUID: device.OUID}).Select("name", "pin", "system", "status", "model", "remark").Updates(&device); result.Error == nil {
+				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device})
+			} else {
+				c.JSON(200, gin.H{"errcode": 10204, "errmsg": "更新数据错误"})
+			}
+		} else {
+			logger.Debugf("%v", err)
+			c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
+	}
+}
+
+// 更新设备PIN码
+func updateDevicePin(c *gin.Context) {
+	if c.Request.Method != "PUT" {
+		c.Status(405)
+		return
+	}
+
+	if cert, err := VerifyToken(c); err == nil {
+		fmt.Println(cert)
+		var device Device
+		if err := c.BindJSON(&device); err == nil {
+			if result := PGDB.Debug().Model(&Device{OUID: device.OUID}).Select("pin").Updates(&device); result.Error == nil {
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device})
 			} else {
 				c.JSON(200, gin.H{"errcode": 10204, "errmsg": "更新数据错误"})
@@ -523,5 +576,53 @@ func verifyOldJWT(c *gin.Context) {
 		}
 	} else {
 		c.JSON(200, gin.H{"errcode": 10103, "errmsg": "请求参数错误"})
+	}
+}
+
+// 上线
+func online(c *gin.Context) {
+	if c.Request.Method != "POST" {
+		c.Status(405)
+		return
+	}
+
+	if cert, err := VerifyToken(c); err == nil {
+		fmt.Println(cert)
+
+		var device Device
+		device.OUID = c.Query("ouid")
+		t := time.Now().Unix()
+		device.LastLoginTime = &t // 最后登录时间
+		if result := PGDB.Debug().Model(&Device{OUID: device.OUID}).Select("last_login_time").Updates(&device); result.Error == nil {
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device})
+		} else {
+			c.JSON(200, gin.H{"errcode": 10204, "errmsg": "更新数据错误"})
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
+	}
+}
+
+// 下线
+func offline(c *gin.Context) {
+	if c.Request.Method != "POST" {
+		c.Status(405)
+		return
+	}
+
+	if cert, err := VerifyToken(c); err == nil {
+		fmt.Println(cert)
+
+		var device Device
+		device.OUID = c.Query("ouid")
+		t := time.Now().Unix()
+		device.LastOnlineTime = &t // 最后在线时间，等同于离线时间
+		if result := PGDB.Debug().Model(&Device{OUID: device.OUID}).Select("last_online_time").Updates(&device); result.Error == nil {
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device})
+		} else {
+			c.JSON(200, gin.H{"errcode": 10204, "errmsg": "更新数据错误"})
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
 	}
 }

@@ -167,18 +167,19 @@ export const asyncRoutes = [
       }
     ]
   },
-  {
-    path: '/company',
-    component: Layout,
-    children: [
-      {
-        path: 'company',
-        component: () => import('@/views/_company/index'),
-        name: 'Company',
-        meta: { title: '商户管理', icon: 'shopping', affix: true }
-      }
-    ]
-  },
+  // 220704 注释，去除商户管理
+  // {
+  //   path: '/company',
+  //   component: Layout,
+  //   children: [
+  //     {
+  //       path: 'company',
+  //       component: () => import('@/views/_company/index'),
+  //       name: 'Company',
+  //       meta: { title: '商户管理', icon: 'shopping', affix: true }
+  //     }
+  //   ]
+  // },
   {
     path: '/record',
     component: Layout,

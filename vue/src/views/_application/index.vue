@@ -157,11 +157,11 @@
       </el-descriptions>
 
       <h3>版本列表</h3>
-      <el-table :data="aaa" style="width: 100%">
+      <el-table :data="appData.versionList" style="width: 100%">
         <el-table-column prop="version" label="版本号"> </el-table-column>
         <el-table-column prop="method" label="方法"> </el-table-column>
-        <el-table-column prop="desc" label="描述"> </el-table-column>
-        <el-table-column prop="time" label="时间"> </el-table-column>
+        <el-table-column prop="description" label="描述"> </el-table-column>
+        <!-- <el-table-column prop="time" label="时间"> </el-table-column> -->
       </el-table>
     </el-dialog>
   </div>
@@ -170,9 +170,11 @@
 <script>
 import { mapGetters } from "vuex";
 import { getApplicationList, createApplication, updateApplication, deleteApplication } from '@/api/application'
+import { getVersionList } from '@/api/version'
 import waves from '@/directive/waves' // waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
+import { get } from "js-cookie";
 
 export default {
   name: 'ComplexTable',
@@ -226,6 +228,15 @@ export default {
         this.list = response.data.items
         this.total = response.data.total
         this.listLoading = false
+      })
+    },
+    async getAppVersionList(appid){
+      return await getVersionList({"appid": appid}).then(response => {
+        var redata = response.data.items.reverse()
+        if (response.data.total > 10){
+          return redata.slice(0, 9)
+        }
+        return redata
       })
     },
     tableRowClassName({row,rowIndex}){
@@ -288,7 +299,7 @@ export default {
       return appOptions
     },
     // 处理应用管理的点击
-    handleApplicationClick(typ,data){
+    async handleApplicationClick(typ,data){
       switch(typ){
         case 'create':
           this.resetAppData()
@@ -311,6 +322,8 @@ export default {
           this.dialogApplicationFormTitle = "查看应用"
           this.appData = data
           this.appData.dependApplist = [];
+          this.appData.versionList = await this.getAppVersionList(this.appData.appid);
+          console.log("ccc: ",this.appData.versionList);
           for (var i = 0; i < this.list.length; i++) {
             if (this.appData.depend.includes(this.list[i].appid)){
               this.appData.dependApplist.push(this.list[i]);

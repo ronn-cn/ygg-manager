@@ -141,25 +141,11 @@
           </el-select>
         </el-form-item>
         
-        <el-form-item label="所属商户" prop="company_id">
-          <el-select
-            v-model="accountData.company_id"
-            class="filter-item"
-            placeholder="请选择所属商户"
-          >
-            <el-option
-              v-for="item in companyOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
+        <el-form-item label="所属公司" prop="company">
+          <el-input v-model="accountData.company" placeholder="请输入所属公司名称" />
         </el-form-item>
         <el-form-item label="联系方式" prop="contact">
-          <el-input
-            v-model="accountData.contact"
-            placeholder="请输入联系方式"
-          />
+          <el-input v-model="accountData.contact" placeholder="请输入联系方式" />
         </el-form-item>
         <el-form-item label="简介" prop="detail">
           <el-input
@@ -202,7 +188,7 @@
         <el-form-item label="详情">
           <span>{{ accountLookData.detail }}</span>
         </el-form-item>
-        <el-form-item label="所属单位">
+        <el-form-item label="所属公司">
           <span>{{ accountLookData.company }}</span>
         </el-form-item>
       </el-form>
@@ -214,7 +200,6 @@
 <script>
 import { mapGetters } from "vuex";
 import { getAccountList, createAccount,updateAccount,deleteAccount } from "@/api/account";
-import { getCompanyList } from "@/api/company";
 import { sha256 } from "js-sha256";
 export default {
   name: "AccountTable",
@@ -239,7 +224,7 @@ export default {
         contact: "",
         detail: "",
         status: 1,
-        company_id: null 
+        company: ""
       },
       accountLookData: {
         ouid: "",
@@ -250,7 +235,7 @@ export default {
         status: 1,
         contact: "",
         detail: "",
-        company: undefined,
+        company: "",
         created_at: 0,
         updated_at: 0,
       },
@@ -293,7 +278,6 @@ export default {
   created() {
     this.getList();
     this.getUserInfo();
-    this.getCompany();
   },
   methods: {
     async getList() {
@@ -324,17 +308,6 @@ export default {
         info: this.info,
         role: this.roles[0].name,
       };
-    },
-    async getCompany(){
-      const { data } = await getCompanyList(null);
-      console.log("商户列表：", data)
-      data.items.forEach((item,index)=>{
-        var opt  = {
-          value: item.id,
-          label: item.name,
-        };
-        this.companyOptions.push(opt);
-      })
     },
     tableRowClassName({ row, rowIndex }) {
       row.index = rowIndex;

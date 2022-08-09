@@ -333,6 +333,7 @@ export default {
           this.dialogSystemFormStatus = 'create'
           this.dialogSystemFormTitle = "新建系统"
           this.dialogSystemFormVisible = true
+          this.$refs.multipleTable.clearSelection()
           break;
         case 'update':
           this.dialogSystemFormStatus = 'update'
@@ -344,8 +345,8 @@ export default {
           this.systemData.remark = data.remark
           this.systemData.listarr = JSON.parse(data.list)
 
-          // this.systemDataListChange()
           setTimeout(() => {
+            this.$refs.multipleTable.clearSelection()
             if (this.systemData.listarr) {
               this.systemData.listarr.forEach(item => {
                 for(let i = 0; i < this.activeAppList.length; i++){
@@ -360,7 +361,7 @@ export default {
             } else {
               this.$refs.multipleTable.clearSelection();
             }
-          }, 300);
+          }, 200);
           this.dialogSystemFormVisible = true
           break;
         case 'look':

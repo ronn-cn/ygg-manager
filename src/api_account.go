@@ -256,7 +256,6 @@ func accountLogin(c *gin.Context) {
 				record.Action = "登录"
 				record.OUID = account.Account
 				record.Info = account.Account + "账号登录成功"
-				record.Relate = account.OUID + fmt.Sprintf("companyid-%v", *account.CompanyID)
 				PGDB.Debug().Create(&record)
 				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": redata})
 			} else {

@@ -16,6 +16,8 @@ func handleLicense(c *gin.Context, ps []string) {
 	switch ps[1] {
 	case "get-license-list": // 查询密钥列表
 		getLicenseList(c)
+	case "query-license":
+		queryLicense(c)
 	case "create-license": // 创建密钥
 		createLicense(c)
 	case "delete-license":
@@ -38,6 +40,28 @@ func getLicenseList(c *gin.Context) {
 
 		if result := PGDB.Order("id").Find(&licenses); result.Error == nil {
 			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": gin.H{"total": len(licenses), "items": licenses}})
+		} else {
+			c.JSON(200, gin.H{"errcode": 10200, "errmsg": "查询数据错误"})
+		}
+	} else {
+		c.JSON(200, gin.H{"errcode": 10105, "errmsg": "请求密钥错误"})
+	}
+}
+
+// 查询授权码信息
+func queryLicense(c *gin.Context) {
+	if c.Request.Method != "GET" {
+		c.Status(405)
+		return
+	}
+
+	if cert, err := VerifyToken(c); err == nil {
+		fmt.Println(cert)
+
+		code := c.Query("code")
+		var license License
+		if result := PGDB.Where("code = ?", code).First(&license); result.Error == nil {
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": license})
 		} else {
 			c.JSON(200, gin.H{"errcode": 10200, "errmsg": "查询数据错误"})
 		}

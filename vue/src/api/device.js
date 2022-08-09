@@ -9,6 +9,15 @@ export function getDeviceList(query) {
   })
 }
 
+// 查询设备列表
+export function queryDeviceStatus(query) {
+  return request({
+    url: '/device/query-device-status',
+    method: 'get',
+    params: query
+  })
+}
+
 // 创建设备
 export function createDevice(data) {
   return request({
@@ -23,6 +32,15 @@ export function createDevice(data) {
 export function updateDevice(data) {
   return request({
     url: '/device/update-device',
+    method: 'put',
+    data
+  })
+}
+
+// 更新设备PIN
+export function updateDevicePin(data) {
+  return request({
+    url: '/device/update-device-pin',
     method: 'put',
     data
   })

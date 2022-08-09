@@ -92,8 +92,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="changePasswordDialog = false">取 消</el-button>
-        <el-button type="primary" @click="changePasswordDialog = false">确 定</el-button>
+        <el-button @click="cancelChangePassword()">取 消</el-button>
+        <el-button type="primary" @click="confirmChangePassword()">确 定</el-button>
       </div>
     </el-dialog>
   </el-card>
@@ -101,6 +101,8 @@
 
 <script>
 import PanThumb from "@/components/PanThumb";
+import {updateAccount} from "@/api/account"
+import { sha256 } from "js-sha256";
 
 export default {
   components: { PanThumb },
@@ -117,9 +119,55 @@ export default {
   },
   data(){
     return {
+      accountData: {
+        account:"",
+        ouid:"",
+        passwd: "",
+      },
       password_old: '',
       password_new: '',
       changePasswordDialog: false,
+    }
+  },
+  methods: {
+    // 取消改变密码
+    cancelChangePassword(){
+      this.password_old = '',
+      this.password_new = '',
+      this.changePasswordDialog = false
+    },
+    // 确认改变密码
+    confirmChangePassword(){
+      if (this.password_old != "" ){
+        if (this.password_old == this.password_new){
+          this.accountData.account = this.user.info.account
+          this.accountData.ouid = this.user.info.ouid
+          this.accountData.passwd = sha256(this.password_new)
+          let tempData = Object.assign({}, this.accountData);
+          updateAccount(tempData).then(() => {
+            this.$message({
+              message: "更新账号密码成功",
+              type: "success",
+              duration: 2000,
+            });
+            this.password_old = '',
+            this.password_new = '',
+            this.changePasswordDialog = false
+          });
+        } else {
+          this.$message({
+            message: "两次输入密码不一致",
+            type: "error",
+            duration: 2000,
+          });
+        }
+      } else {
+        this.$message({
+          message: "密码不能设置为空",
+          type: "error",
+          duration: 2000,
+        });
+      }
     }
   }
 };

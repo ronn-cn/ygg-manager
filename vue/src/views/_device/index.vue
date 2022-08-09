@@ -30,9 +30,15 @@
           <span>{{ row.index }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="设备名称" width="150">
+      <el-table-column label="设备名称" min-width="150">
         <template slot-scope="{ row }">
           <span>{{ row.name }}</span>
+          <el-tag style="margin-left:5px;" v-if="row.status_id == 7" size="mini" type="info" effect="dark">开发</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="设备型号" min-width="150">
+        <template slot-scope="{ row }">
+          <span>{{ row.model}}</span>
         </template>
       </el-table-column>
       <el-table-column label="OUID" min-width="150" show-overflow-tooltip>
@@ -45,9 +51,9 @@
           <span v-if="row.showPin">{{ row.pin }}</span>
           <span v-else>******</span>
           <!-- 修改PIN码图标按钮 -->
-          <!-- <el-tooltip class="item" effect="light" content="修改PIN码" placement="bottom-start" >
-            <em class="el-icon-edit"  style="cursor: pointer" click=""></em>
-          </el-tooltip> -->
+          <el-tooltip class="item" effect="light" content="修改PIN码" placement="bottom-start" >
+            <em class="el-icon-edit"  style="cursor: pointer" @click="handleDevicePinChangeClick(row)"></em>
+          </el-tooltip>
         </template>
       </el-table-column>
       <el-table-column label="状态" min-width="80" align="center" :filters="statusOptions" :filter-method="filterStatus">
@@ -61,7 +67,7 @@
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" sortable prop="created_at" :formatter="formatTime" ></el-table-column>
-      <el-table-column label="最后在线时间" class-name="status-col" sortable prop="last_time" :formatter="formatTime"></el-table-column>
+      <el-table-column label="最后在线时间" class-name="status-col" sortable prop="last_online_time" :formatter="formatTime"></el-table-column>
       <el-table-column label="操作" align="center" fixed="right" width="150" class-name="small-padding fixed-width">
         <template slot-scope="{ row }">
           <el-link class="el-dropdown-link" type="primary" @click="handleDeviceClick('look', row)">查看</el-link>&nbsp;
@@ -70,12 +76,13 @@
           <el-dropdown trigger="click"> 
             <span class="el-dropdown-link">更多<i class="el-icon-arrow-down el-icon--right"></i></span>
             <el-dropdown-menu slot="dropdown"><el-dropdown-item @click.native="pushUpdateToDevice(row.ouid)">更新</el-dropdown-item>
-              <el-dropdown-item v-if="row.status_id != 11" @click.native="updateDeviceStatus(row)">停用</el-dropdown-item>
+              <el-dropdown-item v-if="row.status_id == 1" @click.native="updateDeviceStatus(row, 2)">审核</el-dropdown-item>
+              <el-dropdown-item v-else-if="row.status_id != 4" @click.native="updateDeviceStatus(row, 4)">停用</el-dropdown-item>
               <el-dropdown-item @click.native="deleteDeviceData(row.ouid)">删除</el-dropdown-item>
+              <el-dropdown-item>安装信息</el-dropdown-item>
+              <el-dropdown-item>产品信息</el-dropdown-item>
               <!-- <el-dropdown-item>修改密码</el-dropdown-item> -->
               <!-- <el-dropdown-item>下载</el-dropdown-item> -->
-              <!-- <el-dropdown-item>安装信息</el-dropdown-item> -->
-              <!-- <el-dropdown-item>产品信息</el-dropdown-item> -->
             </el-dropdown-menu>
           </el-dropdown>
         </template>
@@ -94,20 +101,19 @@
     >
       <el-form ref="deviceData" :model="deviceData" label-position="left" label-width="100px" >
         <el-form-item label="设备OUID">
-          <el-input v-model="deviceData.ouid" placeholder="不填写，默认自动生成OUID" />
+          <el-input v-model="deviceData.ouid" placeholder="若不填写，默认自动生成OUID"  auto-complete="off" />
+        </el-form-item>
+        <el-form-item label="设备型号">
+          <el-input v-model="deviceData.model" placeholder="请输入设备型号" auto-complete="off" />
         </el-form-item>
         <el-form-item label="设备名称">
           <el-input v-model="deviceData.name" placeholder="请输入设备名称" auto-complete="off" />
         </el-form-item>
         <el-form-item label="设备PIN码">
-          <el-input v-model="deviceData.pin" placeholder="不填写，默认自动生成6位PIN码" show-password  auto-complete="off" />
+          <el-input v-model="deviceData.pin" placeholder="若不填写，默认自动生成6位PIN码" show-password  auto-complete="off" />
         </el-form-item>
         <el-form-item label="设备系统">
-          <el-select
-            v-model="deviceData.system_ouid"
-            class="filter-item"
-            placeholder="请选择设备系统"
-          >
+          <el-select v-model="deviceData.system_ouid" class="filter-item" placeholder="请选择设备系统">
             <el-option
               v-for="item in systemOptions"
               :key="item.text"
@@ -149,6 +155,8 @@
     <el-dialog
       :visible.sync="dialogDeviceLookVisible"
       :title="dialogDeviceTitle"
+      :close-on-press-escape="false"
+      :close-on-click-modal="false"
     >
       <el-descriptions class="margin-top" :column="3" border>
         <el-descriptions-item label="设备名称">
@@ -201,6 +209,39 @@
         </el-descriptions-item> -->
       </el-descriptions>
     </el-dialog>
+
+    <!-- 这一段是修改PIN的弹窗 -->
+    <el-dialog
+      title="修改PIN码"
+      :visible.sync="dialogChangePinVisible"
+      width="30%"
+      :before-close="closeChangePinForm"
+      :close-on-press-escape="false"
+      :close-on-click-modal="false"
+    >
+      <el-form>
+        <el-input
+          v-model="pin1"
+          class="passwd-input"
+          placeholder="请输入修改的PIN码"
+          show-password
+          maxlength="6"
+          autocomplete="off"
+        />
+        <el-input
+          v-model="pin2"
+          class="passwd-input"
+          placeholder="请输入刚才的PIN码"
+          show-password
+          maxlength="6"
+          autocomplete="off"
+        />
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="closeChangePinForm">取 消</el-button>
+        <el-button type="primary" @click="submiteChangePinForm()">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -209,10 +250,12 @@ import {
   getDeviceList,
   createDevice,
   updateDevice,
+  updateDevicePin,
   deleteDevice,
   pushUpdate,
 } from "@/api/device";
 import { getSystemList } from "@/api/system";
+import { queryDeviceStatus } from "@/api/device";
 import waves from "@/directive/waves"; // waves directive
 import { parseTime } from "@/utils";
 import Pagination from "@/components/Pagination"; // secondary package based on el-pagination
@@ -236,71 +279,20 @@ export default {
         system_ouid: undefined,
       },
       // TODO：修改为api获取
-      statusOptions: [
-        {
-          value: 1,
-          text: "注册",
-        },
-        {
-          value: 2,
-          text: "质检中",
-        },
-        {
-          value: 3,
-          text: "质检合格",
-        },
-        {
-          value: 4,
-          text: "质检不合格",
-        },
-        {
-          value: 5,
-          text: "销售中",
-        },
-        {
-          value: 6,
-          text: "已售出",
-        },
-        {
-          value: 7,
-          text: "待安装",
-        },
-        {
-          value: 8,
-          text: "安装中",
-        },
-        {
-          value: 9,
-          text: "安装完成",
-        },
-        {
-          value: 10,
-          text: "正常",
-        },
-        {
-          value: 11,
-          text: "停用",
-        },
-        {
-          value: 12,
-          text: "维护",
-        },
-        {
-          value: 13,
-          text: "开发",
-        },
-      ],
+      statusOptions: [],
       systemOptions: [], //动态获取
       dialogDeviceLookVisible: false,
       dialogDeviceFormVisible: false,
+      dialogChangePinVisible: false,
       dialogDeviceStatus: "",
       dialogDeviceTitle: "",
       deviceData: {
         name: "",
+        model: "",
         ouid: "",
         pin: "",
         system_ouid: undefined,
-        status_id: 13,
+        status_id: 7,
         license: undefined,
         product_json: undefined,
         install_json: undefined,
@@ -309,20 +301,27 @@ export default {
         updated_at: 0,
         installed_at: 0,
         slod_time: 0,
-        last_time: 0,
+        last_online_time: 0,
+        last_login_time: 0,
       },
       downloadLoading: false,
+      pin1: "",
+      pin2: "",
+      devicePinData: {
+        ouid: "",
+        pin: "",
+      }
     };
   },
   created() {
     this.getList();
     this.getSystemList();
+    this.getStatusList();
   },
   methods: {
     getList() {
       this.listLoading = true;
       getDeviceList(this.listQuery).then((response) => {
-        console.log("ssss：", response.data);
         this.list = response.data.items;
         this.total = response.data.total;
 
@@ -341,13 +340,25 @@ export default {
         }
       });
     },
+    getStatusList() {
+      queryDeviceStatus().then((response) => {
+        console.log("response.data:", response.data);
+        for (let i = 0; i < response.data.length; i++) {
+          let opt = {
+            value: response.data[i].id,
+            text: response.data[i].name,
+          };
+          this.statusOptions.push(opt);
+        }
+      });
+    },
     tableRowClassName({ row, rowIndex }) {
       row.index = rowIndex;
       row.showPin = false;
     },
     // 格式化时间
     formatTime(row, column) {
-      if (row[column.property] == 0) {
+      if (row[column.property] == 0 || row[column.property] == null || row[column.property] == undefined) {
         return "/";
       } else {
         const date = new Date(row[column.property] * 1000);
@@ -432,7 +443,7 @@ export default {
         ouid: "",
         pin: "",
         system_ouid: undefined,
-        status_id: 13,
+        status_id: 7,
         license: undefined,
         product_json: undefined,
         install_json: undefined,
@@ -477,14 +488,14 @@ export default {
         }
       });
     },
-    updateDeviceStatus(row) {
+    updateDeviceStatus(row, status) {
       this.deviceData = row
-      this.deviceData.status_id = 11; // 设置为11是停用设备
+      this.deviceData.status_id = status; // 设置为4是停用设备
       const tempData = Object.assign({}, this.deviceData);
       updateDevice(tempData).then(() => {
         this.getList();
         this.$message({
-          message: "已停用设备",
+          message: "已操作",
           type: "success",
           duration: 2000,
         });
@@ -561,6 +572,45 @@ export default {
         })
       );
     },
+    
+    handleDevicePinChangeClick(data){
+      this.dialogChangePinVisible = true
+      this.devicePinData.ouid = data.ouid;
+    },
+    submiteChangePinForm() {
+      if (this.pin1 == ''){
+        this.$message({
+          message: "不能输入空PIN码",
+          type: "error",
+          duration: 2000,
+        });
+        return
+      }
+      if (this.pin1 == this.pin2){
+          this.devicePinData.pin = this.pin2
+          let tempData = Object.assign({}, this.devicePinData);
+          updateDevicePin(tempData).then(() => {
+            this.getList();
+            this.$message({
+              message: "更新账号密码成功",
+              type: "success",
+              duration: 2000,
+            });
+          });
+          this.closeChangePinForm();
+      } else {
+        this.$message({
+          message: "两次输入的密码不一致",
+          type: "error",
+          duration: 2000,
+        });
+      }
+    },
+    closeChangePinForm() {
+      this.pin1 = "";
+      this.pin2 = "";
+      this.dialogChangePinVisible = false;
+    }
   },
 };
 </script>
@@ -586,5 +636,9 @@ export default {
       color: #99a9bf;
     }
   }
+}
+
+.passwd-input {
+  margin-top: 10px;
 }
 </style>

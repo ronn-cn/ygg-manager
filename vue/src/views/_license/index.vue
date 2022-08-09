@@ -62,7 +62,7 @@
     <el-dialog :title="dialogLicenseTitle" :visible.sync="dialogLicenseFormVisible" :close-on-press-escape="false" :close-on-click-modal="false">
       <el-form ref="licenseData" :model="licenseData" label-position="left" label-width="100px">
         <el-form-item label="密钥Code">
-          <el-input v-model="licenseData.ouid" placeholder="不填写，默认自动生成Code" />
+          <el-input v-model="licenseData.code" placeholder="不填写，默认自动生成Code" />
         </el-form-item>
         <el-form-item label="授权注册数量">
           <el-input v-model="licenseData.count" placeholder="请输入设备名称" />
@@ -97,7 +97,7 @@
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogLicenseFormVisible = false"> 取消 </el-button>
-        <el-button type="primary" @click="dialogLicenseStatus==='create'?createLicenseData():updateLicenseData()"> 确认 </el-button>
+        <el-button type="primary" @click="createLicenseData()"> 确认 </el-button>
       </div>
     </el-dialog>
 
@@ -121,8 +121,8 @@
           {{ parseTime(licenseData.created_at) }}
         </el-descriptions-item>
 
-        <el-descriptions-item label="更新时间">
-          {{ parseTime(licenseData.updated_at) }}
+        <el-descriptions-item label="到期时间">
+          {{ parseTime(licenseData.expires_at) }}
         </el-descriptions-item>
         
         <el-descriptions-item span="3" label="备注">

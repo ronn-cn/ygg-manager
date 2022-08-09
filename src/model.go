@@ -25,17 +25,16 @@ type Model struct {
 // 数据结构表
 type Account struct {
 	Model
-	OUID           string      `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`                  // 统一标识
-	Name           string      `json:"name" gorm:"column:name;"`                                     // 账号名称
-	Account        string      `json:"account" gorm:"column:account;NOT NULL"`                       // 账号
-	Passwd         string      `json:"passwd" gorm:"column:passwd;NOT NULL"`                         // 密码
-	PermissionType *Permission `json:"type" gorm:"ForeignKey:TypeID;AssociationForeignKey:ID"`       // 账户权限类型
-	TypeID         int         `json:"type_id" gorm:"column:type;NOT NULL"`                          // 账户权限类型ID
-	Contact        string      `json:"contact" gorm:"column:contact"`                                // 联系方式
-	Detail         string      `json:"detail" gorm:"column:detail"`                                  // 详细
-	Status         int         `json:"status" gorm:"column:status;NOT NULL"`                         // 账户状态，启用1 禁用0
-	Company        *Company    `json:"company" gorm:"ForeignKey:CompanyID;AssociationForeignKey:ID"` // 账户单位
-	CompanyID      *int        `json:"company_id" gorm:"column:company;default:NULL"`                // 账户的单位id
+	OUID           string      `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`            // 统一标识
+	Name           string      `json:"name" gorm:"column:name;"`                               // 账号名称
+	Account        string      `json:"account" gorm:"column:account;NOT NULL"`                 // 账号
+	Passwd         string      `json:"passwd" gorm:"column:passwd;NOT NULL"`                   // 密码
+	PermissionType *Permission `json:"type" gorm:"ForeignKey:TypeID;AssociationForeignKey:ID"` // 账户权限类型
+	TypeID         int         `json:"type_id" gorm:"column:type;NOT NULL"`                    // 账户权限类型ID
+	Contact        string      `json:"contact" gorm:"column:contact"`                          // 联系方式
+	Detail         string      `json:"detail" gorm:"column:detail"`                            // 详细
+	Status         int         `json:"status" gorm:"column:status;NOT NULL"`                   // 账户状态，启用1 禁用0
+	Company        string      `json:"company" gorm:"column:company"`                          // 账户所属公司
 	IP             string      `json:"-" gorm:"-"`
 }
 
@@ -46,16 +45,15 @@ func (Account) TableName() string {
 // 返回账号接口类
 type AccountApi struct {
 	Model
-	OUID           string      `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`                  // 统一标识
-	Name           string      `json:"name" gorm:"column:name;"`                                     // 账号名称
-	Account        string      `json:"account" gorm:"column:account;NOT NULL"`                       // 账号
-	PermissionType *Permission `json:"type" gorm:"ForeignKey:TypeID;AssociationForeignKey:ID"`       // 账户权限类型
-	TypeID         *int        `json:"type_id" gorm:"column:type;NOT NULL"`                          // 账户权限类型ID
-	Contact        string      `json:"contact" gorm:"column:contact"`                                // 联系方式
-	Detail         string      `json:"detail" gorm:"column:detail"`                                  // 详细
-	Status         int         `json:"status" gorm:"column:status;NOT NULL"`                         // 账户状态，启用1 禁用0
-	Company        *Company    `json:"company" gorm:"ForeignKey:CompanyID;AssociationForeignKey:ID"` // 账户单位
-	CompanyID      *int        `json:"company_id" gorm:"column:company"`                             // 账户的单位id
+	OUID           string      `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`            // 统一标识
+	Name           string      `json:"name" gorm:"column:name;"`                               // 账号名称
+	Account        string      `json:"account" gorm:"column:account;NOT NULL"`                 // 账号
+	PermissionType *Permission `json:"type" gorm:"ForeignKey:TypeID;AssociationForeignKey:ID"` // 账户权限类型
+	TypeID         *int        `json:"type_id" gorm:"column:type;NOT NULL"`                    // 账户权限类型ID
+	Contact        string      `json:"contact" gorm:"column:contact"`                          // 联系方式
+	Detail         string      `json:"detail" gorm:"column:detail"`                            // 详细
+	Status         int         `json:"status" gorm:"column:status;NOT NULL"`                   // 账户状态，启用1 禁用0
+	Company        string      `json:"company" gorm:"column:company"`                          // 账户所属公司
 	IP             string      `json:"-" gorm:"-"`
 }
 
@@ -75,26 +73,27 @@ func (Permission) TableName() string {
 
 type Device struct {
 	Model
-	OUID         string        `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`                      // 统一标识
-	Name         string        `json:"name" gorm:"column:name"`                                          // 设备名称
-	PIN          string        `json:"pin" gorm:"column:pin"`                                            // 设备PIN码
-	System       *System       `json:"system" gorm:"ForeignKey:SystemOUID;AssociationForeignKey:OUID"`   // 设备系统
-	SystemOUID   *string       `json:"system_ouid" gorm:"column:system"`                                 // 设备系统OUID
-	DeviceStatus *DeviceStatus `json:"status" gorm:"ForeignKey:StatusID;AssociationForeignKey:ID"`       // 设备系统
-	StatusID     *int          `json:"status_id" gorm:"column:status"`                                   // 设备状态
-	License      *License      `json:"license" gorm:"ForeignKey:LicenseCode;AssociationForeignKey:Code"` // 注册信息
-	LicenseCode  *string       `json:"license_code" gorm:"column:license"`                               // 注册授权码
-	ProductJson  string        `json:"product_json" gorm:"column:product_json"`                          // 产品信息
-	InstallJson  string        `json:"install_json" gorm:"column:install_json"`                          // 安装信息
-	SoldTime     *int64        `json:"sold_time" gorm:"column:sold_time"`                                // 出售时间
-	InstalledAt  *int64        `json:"installed_at" gorm:"column:installed_at"`                          // 安装时间
-	LastTime     *int64        `json:"last_time" gorm:"column:last_time"`                                // 最后登录时间
-	OwnerCompany *Company      `json:"owner" gorm:"ForeignKey:OwnerID;AssociationForeignKey:ID"`         // 所有者单位
-	OwnerID      *int          `json:"owner_id" gorm:"column:owner"`                                     // 所有者ID
-	Remark       string        `json:"remark" gorm:"column:remark"`                                      // 备注
-	Manufacturer *int          `json:"manufacturer" gorm:"column:manufacturer"`                          // 生产者
-	Distributor  *int          `json:"distributor" gorm:"column:distributor"`                            // 销售者
-	Customer     *int          `json:"customer" gorm:"column:customer"`                                  // 使用客户
+	OUID           string        `json:"ouid" gorm:"column:ouid;primaryKey;NOT NULL"`                      // 统一标识
+	Name           string        `json:"name" gorm:"column:name"`                                          // 设备名称
+	ModelN         string        `json:"model" gorm:"column:model"`                                        // 设备型号
+	PIN            string        `json:"pin" gorm:"column:pin"`                                            // 设备PIN码
+	System         *System       `json:"system" gorm:"ForeignKey:SystemOUID;AssociationForeignKey:OUID"`   // 设备系统
+	SystemOUID     *string       `json:"system_ouid" gorm:"column:system"`                                 // 设备系统OUID
+	DeviceStatus   *DeviceStatus `json:"status" gorm:"ForeignKey:StatusID;AssociationForeignKey:ID"`       // 设备系统
+	StatusID       *int          `json:"status_id" gorm:"column:status"`                                   // 设备状态
+	License        *License      `json:"license" gorm:"ForeignKey:LicenseCode;AssociationForeignKey:Code"` // 注册信息
+	LicenseCode    *string       `json:"license_code" gorm:"column:license"`                               // 注册授权码
+	ProductJson    string        `json:"product_json" gorm:"column:product_json"`                          // 产品信息
+	InstallJson    string        `json:"install_json" gorm:"column:install_json"`                          // 安装信息
+	AuditTime      *int64        `json:"audit_time" gorm:"column:audit_time"`                              // 审核时间（审核入库）
+	SoldTime       *int64        `json:"sold_time" gorm:"column:sold_time"`                                // 出售时间
+	InstalledAt    *int64        `json:"installed_at" gorm:"column:installed_at"`                          // 安装时间
+	LastLoginTime  *int64        `json:"last_login_time" gorm:"column:last_login_time"`                    // 最后登录时间
+	LastOnlineTime *int64        `json:"last_online_time" gorm:"column:last_online_time"`                  // 最后在线时间
+	Remark         string        `json:"remark" gorm:"column:remark"`                                      // 备注
+	Manufacturer   string        `json:"manufacturer" gorm:"column:manufacturer"`                          // 生产者
+	Distributor    string        `json:"distributor" gorm:"column:distributor"`                            // 销售者
+	Customer       string        `json:"customer" gorm:"column:customer"`                                  // 使用者
 }
 
 func (Device) TableName() string {
