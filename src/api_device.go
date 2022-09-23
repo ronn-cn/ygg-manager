@@ -148,7 +148,7 @@ func queryDevice(c *gin.Context) {
 		}
 
 		var device Device
-		if result := PGDB.Debug().Preload("System").Preload("DeviceStatus").Preload("License").Preload("OwnerCompany").Where("ouid = ?", ouidstr).First(&device); result.Error == nil {
+		if result := PGDB.Debug().Preload("System").Preload("DeviceStatus").Preload("License").Where("ouid = ?", ouidstr).First(&device); result.Error == nil {
 			c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device})
 			return
 		} else {
@@ -371,12 +371,23 @@ func updateDevice(c *gin.Context) {
 
 	if cert, err := VerifyToken(c); err == nil {
 		fmt.Println(cert)
-		var device Device
-		if err := c.BindJSON(&device); err == nil {
-			if result := PGDB.Debug().Model(&Device{OUID: device.OUID}).Select("name", "pin", "system", "status", "model", "remark").Updates(&device); result.Error == nil {
-				c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device})
+		var devParams Device
+		if err := c.BindJSON(&devParams); err == nil {
+			// if *device.SystemOUID != "" {
+			// 	logger.Debugf("更新的systemouid %v", *device.SystemOUID)
+			// 	PGDB.Model(&Device{OUID: device.OUID}).Update("system", *device.SystemOUID)
+			// }
+
+			var device Device
+			if resultA := PGDB.Debug().Preload("System").Preload("DeviceStatus").Preload("License").Where("ouid = ?", devParams.OUID).First(&device); resultA.Error == nil {
+				device.SystemOUID = devParams.SystemOUID
+				if result := PGDB.Debug().Model(&Device{OUID: device.OUID}).Select("name", "pin", "system", "status", "model", "remark").Updates(&device); result.Error == nil {
+					c.JSON(200, gin.H{"errcode": 0, "errmsg": "请求成功", "data": device})
+				} else {
+					c.JSON(200, gin.H{"errcode": 10204, "errmsg": "更新数据错误"})
+				}
 			} else {
-				c.JSON(200, gin.H{"errcode": 10204, "errmsg": "更新数据错误"})
+				c.JSON(200, gin.H{"errcode": 10103, "errmsg": "查询数据错误"})
 			}
 		} else {
 			logger.Debugf("%v", err)

@@ -47,6 +47,13 @@ func getApplicationList(c *gin.Context) {
 		pagestr := c.Query("page")
 		limitstr := c.Query("limit")
 
+		if pagestr != "" {
+			pagestr = "1"
+		}
+		if limitstr != "" {
+			limitstr = "9999"
+		}
+
 		namestr := c.Query("name")
 		appidstr := c.Query("appid")
 		typestr := c.Query("type")
