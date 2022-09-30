@@ -375,6 +375,7 @@ export default {
       this.$refs['licenseData'].validate((valid) => {
         if (valid) {
           var date = new Date(this.licenseData.expires_value)
+          this.licenseData.count = parseInt(""+this.licenseData.count)
           this.licenseData.expires_at = parseInt(date.getTime()/1000)
           createLicense(this.licenseData).then(() => {
             this.getList()
